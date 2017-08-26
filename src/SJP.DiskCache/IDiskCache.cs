@@ -9,7 +9,7 @@ namespace SJP.DiskCache
     //      maybe later something more generic?
     public interface IDiskCache : IDisposable
     {
-        long MaximumStorageCapacity { get; }
+        ulong MaximumStorageCapacity { get; }
 
         // TODO remove and place only on the DiskCache class itself
         //      as it's an implementation detail, not something for the interface

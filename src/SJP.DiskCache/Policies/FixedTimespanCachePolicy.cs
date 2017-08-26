@@ -22,9 +22,22 @@ namespace SJP.DiskCache
                 throw new ArgumentNullException(nameof(entries));
 
             var currentTime = DateTime.Now;
-            return entries
-                .Where(e => (currentTime - e.CreationTime) > ExpirationTimespan)
-                .OrderBy(e => e.CreationTime); // given that they're removed, remove oldest first
+            ulong totalSum = 0;
+            var validKeys = entries
+                .OrderByDescending(e => e.CreationTime) // for the valid objects keep the newest
+                .TakeWhile(e =>
+                {
+                    var hasExpired = (currentTime - e.CreationTime) > ExpirationTimespan;
+                    if (hasExpired)
+                        return false;
+                    totalSum += e.Size;
+                    return totalSum <= maximumStorageCapacity;
+                })
+                .Select(e => e.Key)
+                .ToList();
+
+            var validKeySet = new HashSet<string>(validKeys);
+            return entries.Where(e => !validKeySet.Contains(e.Key)).ToList();
         }
 
         private readonly static TimeSpan _zero = new TimeSpan(0);

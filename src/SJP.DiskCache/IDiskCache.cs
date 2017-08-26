@@ -17,11 +17,11 @@ namespace SJP.DiskCache
 
         ICachePolicy Policy { get; }
 
-        event EventHandler<object> EntryAdded;
+        event EventHandler<ICacheEntry> EntryAdded;
 
-        event EventHandler<object> EntryUpdated;
+        event EventHandler<ICacheEntry> EntryUpdated;
 
-        event EventHandler<object> EntryRemoved;
+        event EventHandler<ICacheEntry> EntryRemoved;
 
         void Clear();
 
@@ -40,5 +40,7 @@ namespace SJP.DiskCache
         Task<(bool hasValue, Stream stream)> TryGetValueAsync(string key);
 
         void SetValue(string key, Stream value);
+
+        bool TrySetValue(string key, Stream value);
     }
 }

@@ -13,5 +13,9 @@ namespace SJP.DiskCache
         DateTime CreationTime { get; }
 
         ulong AccessCount { get; }
+
+        // updates information about the cache entry
+        // mostly updates last accessed and access count
+        void Refresh();
     }
 }

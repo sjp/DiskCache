@@ -23,7 +23,7 @@ namespace SJP.DiskCache
                 .ToList();
 
             var validKeySet = new HashSet<string>(validKeys);
-            return entries.Where(e => !validKeySet.Contains(e.Key));
+            return entries.Where(e => !validKeySet.Contains(e.Key)).ToList();
         }
     }
 }

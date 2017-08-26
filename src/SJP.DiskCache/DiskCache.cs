@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace SJP.DiskCache
 {
@@ -21,12 +23,20 @@ namespace SJP.DiskCache
             if (!Directory.Exists(directoryPath))
                 throw new ArgumentException("The cache directory does not exit.", nameof(directoryPath));
             if (storageCapacity == 0)
-                throw new ArgumentOutOfRangeException("The storage capacity must be at least 1 byte. Given: " + storageCapacity.ToString(), nameof(storageCapacity));
+                throw new ArgumentOutOfRangeException("The storage capacity must be at least 1 byte. Given: " + storageCapacity.ToString(CultureInfo.InvariantCulture), nameof(storageCapacity));
 
             CachePath = new DirectoryInfo(directoryPath);
             Policy = cachePolicy ?? throw new ArgumentNullException(nameof(cachePolicy));
             MaximumStorageCapacity = storageCapacity;
             PollingInterval = pollingInterval ?? TimeSpan.FromMinutes(1);
+
+            // remove the contents of the cache dir to ensure that
+            // the file size limits are tracked properly
+            foreach (var dir in CachePath.EnumerateDirectories())
+                dir.Delete(true);
+
+            foreach (var file in CachePath.EnumerateFiles())
+                file.Delete();
         }
 
         public ulong MaximumStorageCapacity { get; }
@@ -37,11 +47,11 @@ namespace SJP.DiskCache
 
         protected DirectoryInfo CachePath { get; }
 
-        public event EventHandler<object> EntryAdded;
+        public event EventHandler<ICacheEntry> EntryAdded;
 
-        public event EventHandler<object> EntryUpdated;
+        public event EventHandler<ICacheEntry> EntryUpdated;
 
-        public event EventHandler<object> EntryRemoved;
+        public event EventHandler<ICacheEntry> EntryRemoved;
 
         public void Clear()
         {
@@ -83,6 +93,10 @@ namespace SJP.DiskCache
             if (!File.Exists(path))
                 throw new FileNotFoundException($"Expected to find a path at the path '{ path }', but it does not exist.", path);
 
+            var cacheEntry = _entryLookup[key];
+            cacheEntry.Refresh();
+            _entryLookup[key] = cacheEntry;
+
             return File.OpenRead(path);
         }
 
@@ -103,13 +117,57 @@ namespace SJP.DiskCache
             if (!value.CanRead)
                 throw new ArgumentException("The given stream is not readable.", nameof(value));
 
-            var tmpFileName = Path.Combine(CachePath.FullName, Guid.NewGuid().ToString());
-            using (var writer = File.OpenWrite(tmpFileName))
-                value.CopyTo(writer);
+            ulong totalBytesRead = 0;
+            const long bufferSize = 4096;
 
-            string cachePath = null;
-            using (var tmpFileReader = File.OpenRead(tmpFileName))
-                cachePath = GetPath(tmpFileReader);
+            var tmpFileName = Path.Combine(CachePath.FullName, Guid.NewGuid().ToString());
+            string hash = null;
+
+            using (var shaHasher = new SHA256Managed())
+            {
+                using (var writer = File.OpenWrite(tmpFileName))
+                {
+                    byte[] oldBuffer;
+                    int oldBytesRead;
+
+                    var buffer = new byte[bufferSize];
+                    var bytesRead = value.Read(buffer, 0, buffer.Length);
+                    totalBytesRead += Convert.ToUInt32(bytesRead);
+
+                    do
+                    {
+                        oldBytesRead = bytesRead;
+                        oldBuffer = buffer;
+
+                        buffer = new byte[bufferSize];
+                        bytesRead = value.Read(buffer, 0, buffer.Length);
+                        totalBytesRead += Convert.ToUInt32(bytesRead);
+
+                        if (bytesRead == 0)
+                        {
+                            shaHasher.TransformFinalBlock(oldBuffer, 0, oldBytesRead);
+                            writer.Write(oldBuffer, 0, oldBytesRead);
+                        }
+                        else
+                        {
+                            shaHasher.TransformBlock(oldBuffer, 0, oldBytesRead, oldBuffer, 0);
+                            writer.Write(oldBuffer, 0, oldBytesRead);
+                        }
+                    }
+                    while (bytesRead != 0 && totalBytesRead <= MaximumStorageCapacity);
+                }
+
+                if (totalBytesRead > MaximumStorageCapacity)
+                {
+                    File.Delete(tmpFileName); // remove the file, we can't keep it anyway
+                    throw new ArgumentException("The given stream received data that was larger than the allotted storage capacity of " + MaximumStorageCapacity.ToString(CultureInfo.InvariantCulture), nameof(value));
+                }
+
+                var shaHashBytes = shaHasher.Hash;
+                hash = BitConverter.ToString(shaHashBytes).Replace("-", string.Empty);
+            }
+
+            var cachePath = GetPath(hash);
 
             var isNew = ContainsKey(key);
 
@@ -121,6 +179,85 @@ namespace SJP.DiskCache
                 EntryAdded.Invoke(this, cacheEntry);
             else
                 EntryUpdated.Invoke(this, cacheEntry);
+
+            ApplyCachePolicy();
+        }
+
+        public bool TrySetValue(string key, Stream value)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentNullException(nameof(key));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (!value.CanRead)
+                throw new ArgumentException("The given stream is not readable.", nameof(value));
+
+            ulong totalBytesRead = 0;
+            const long bufferSize = 4096;
+
+            var tmpFileName = Path.Combine(CachePath.FullName, Guid.NewGuid().ToString());
+            string hash = null;
+
+            using (var shaHasher = new SHA256Managed())
+            {
+                using (var writer = File.OpenWrite(tmpFileName))
+                {
+                    byte[] oldBuffer;
+                    int oldBytesRead;
+
+                    var buffer = new byte[bufferSize];
+                    var bytesRead = value.Read(buffer, 0, buffer.Length);
+                    totalBytesRead += Convert.ToUInt32(bytesRead);
+
+                    do
+                    {
+                        oldBytesRead = bytesRead;
+                        oldBuffer = buffer;
+
+                        buffer = new byte[bufferSize];
+                        bytesRead = value.Read(buffer, 0, buffer.Length);
+                        totalBytesRead += Convert.ToUInt32(bytesRead);
+
+                        if (bytesRead == 0)
+                        {
+                            shaHasher.TransformFinalBlock(oldBuffer, 0, oldBytesRead);
+                            writer.Write(oldBuffer, 0, oldBytesRead);
+                        }
+                        else
+                        {
+                            shaHasher.TransformBlock(oldBuffer, 0, oldBytesRead, oldBuffer, 0);
+                            writer.Write(oldBuffer, 0, oldBytesRead);
+                        }
+                    }
+                    while (bytesRead != 0 && totalBytesRead <= MaximumStorageCapacity);
+                }
+
+                if (totalBytesRead > MaximumStorageCapacity)
+                {
+                    File.Delete(tmpFileName); // remove the file, we can't keep it anyway
+                    return false;
+                }
+
+                var shaHashBytes = shaHasher.Hash;
+                hash = BitConverter.ToString(shaHashBytes).Replace("-", string.Empty);
+            }
+
+            var cachePath = GetPath(hash);
+            File.Move(tmpFileName, cachePath);
+
+            var isNew = ContainsKey(key);
+            var fileInfo = new FileInfo(cachePath);
+            var cacheEntry = new CacheEntry(key, Convert.ToUInt64(fileInfo.Length));
+            _entryLookup[key] = cacheEntry;
+            _fileLookup[key] = cachePath;
+
+            if (isNew)
+                EntryAdded?.Invoke(this, cacheEntry);
+            else
+                EntryUpdated?.Invoke(this, cacheEntry);
+
+            ApplyCachePolicy();
+            return true;
         }
 
         public bool TryGetValue(string key, out Stream stream)
@@ -172,37 +309,41 @@ namespace SJP.DiskCache
             _disposed = true;
         }
 
-        protected virtual string GetPath(Stream stream)
+        protected void ApplyCachePolicy()
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-            if (!stream.CanRead)
-                throw new ArgumentException("The given stream is not readable.", nameof(stream));
+            var expiredEntries = Policy.GetExpiredEntries(_entryLookup.Values, MaximumStorageCapacity);
+            foreach (var expiredEntry in expiredEntries)
+            {
+                var key = expiredEntry.Key;
+                var filePath = _fileLookup[key];
+                File.Delete(filePath);
+                _fileLookup.TryRemove(key, out var tmpFilePath);
+                _entryLookup.TryRemove(key, out var lookupEntry);
+                EntryRemoved?.Invoke(this, lookupEntry);
+            }
+        }
 
-            var hash = GetStreamHash(stream);
-            // have 2 levels of directories to speed up IO
-            // use 2 chars for each level
+        protected virtual string GetPath(string hash)
+        {
+            if (string.IsNullOrWhiteSpace(hash))
+                throw new ArgumentNullException(nameof(hash));
+            if (hash.Length != 32)
+                throw new ArgumentException("The hash must be a 32 character long representation of a 256-bit hash.", nameof(hash));
+            var allValidChars = hash.All(IsValidHexChar);
+            if (!allValidChars)
+                throw new ArgumentException("The hash must be string containing only hexadecimal characters that represent a 256-bit hash", nameof(hash));
+
             var firstDir = hash.Substring(0, 2);
             var secondDir = hash.Substring(2, 2);
 
             return Path.Combine(CachePath.FullName, firstDir, secondDir, hash);
         }
 
-        protected static string GetStreamHash(Stream stream)
-        {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-            if (!stream.CanRead)
-                throw new ArgumentException("The given stream is not readable.", nameof(stream));
-
-            var shaHasher = new SHA256Managed();
-            var hash = shaHasher.ComputeHash(stream);
-            return BitConverter.ToString(hash).Replace("-", string.Empty);
-        }
+        protected static bool IsValidHexChar(char c) => byte.TryParse(c.ToString(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var tmp);
 
         private bool _disposed;
 
-        private readonly ConcurrentDictionary<string, ICacheEntry> _entryLookup;
-        private readonly ConcurrentDictionary<string, string> _fileLookup;
+        private readonly ConcurrentDictionary<string, ICacheEntry> _entryLookup = new ConcurrentDictionary<string, ICacheEntry>();
+        private readonly ConcurrentDictionary<string, string> _fileLookup = new ConcurrentDictionary<string, string>();
     }
 }

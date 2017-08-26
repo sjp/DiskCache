@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
 
 namespace SJP.DiskCache
 {
@@ -37,6 +38,16 @@ namespace SJP.DiskCache
 
             foreach (var file in CachePath.EnumerateFiles())
                 file.Delete();
+
+            _pollingCancel = new CancellationToken();
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    await Task.Delay(PollingInterval).ConfigureAwait(false);
+                    ApplyCachePolicy();
+                }
+            }, _pollingCancel);
         }
 
         public ulong MaximumStorageCapacity { get; }
@@ -167,18 +178,23 @@ namespace SJP.DiskCache
                 hash = BitConverter.ToString(shaHashBytes).Replace("-", string.Empty);
             }
 
-            var cachePath = GetPath(hash);
+            var isNew = !ContainsKey(key);
 
-            var isNew = ContainsKey(key);
+            var cachePath = GetPath(hash);
+            var cachePathDir = Path.GetDirectoryName(cachePath);
+            if (!Directory.Exists(cachePathDir))
+                Directory.CreateDirectory(cachePathDir);
+            File.Move(tmpFileName, cachePath);
+            var cacheFileInfo = new FileInfo(cachePath);
 
             _fileLookup[key] = cachePath;
-            var cacheEntry = (ICacheEntry)null;
+            var cacheEntry = new CacheEntry(key, Convert.ToUInt64(cacheFileInfo.Length));
             _entryLookup[key] = cacheEntry;
 
             if (isNew)
-                EntryAdded.Invoke(this, cacheEntry);
+                EntryAdded?.Invoke(this, cacheEntry);
             else
-                EntryUpdated.Invoke(this, cacheEntry);
+                EntryUpdated?.Invoke(this, cacheEntry);
 
             ApplyCachePolicy();
         }
@@ -242,14 +258,18 @@ namespace SJP.DiskCache
                 hash = BitConverter.ToString(shaHashBytes).Replace("-", string.Empty);
             }
 
-            var cachePath = GetPath(hash);
-            File.Move(tmpFileName, cachePath);
+            var isNew = !ContainsKey(key);
 
-            var isNew = ContainsKey(key);
-            var fileInfo = new FileInfo(cachePath);
-            var cacheEntry = new CacheEntry(key, Convert.ToUInt64(fileInfo.Length));
-            _entryLookup[key] = cacheEntry;
+            var cachePath = GetPath(hash);
+            var cachePathDir = Path.GetDirectoryName(cachePath);
+            if (!Directory.Exists(cachePathDir))
+                Directory.CreateDirectory(cachePathDir);
+            File.Move(tmpFileName, cachePath);
+            var cacheFileInfo = new FileInfo(cachePath);
+
             _fileLookup[key] = cachePath;
+            var cacheEntry = new CacheEntry(key, Convert.ToUInt64(cacheFileInfo.Length));
+            _entryLookup[key] = cacheEntry;
 
             if (isNew)
                 EntryAdded?.Invoke(this, cacheEntry);
@@ -327,7 +347,7 @@ namespace SJP.DiskCache
         {
             if (string.IsNullOrWhiteSpace(hash))
                 throw new ArgumentNullException(nameof(hash));
-            if (hash.Length != 32)
+            if (hash.Length != 64)
                 throw new ArgumentException("The hash must be a 32 character long representation of a 256-bit hash.", nameof(hash));
             var allValidChars = hash.All(IsValidHexChar);
             if (!allValidChars)
@@ -341,6 +361,7 @@ namespace SJP.DiskCache
 
         protected static bool IsValidHexChar(char c) => byte.TryParse(c.ToString(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var tmp);
 
+        private CancellationToken _pollingCancel;
         private bool _disposed;
 
         private readonly ConcurrentDictionary<string, ICacheEntry> _entryLookup = new ConcurrentDictionary<string, ICacheEntry>();

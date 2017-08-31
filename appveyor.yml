@@ -1,0 +1,27 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+
+install:
+  - cmd: dotnet --info
+  - cmd: dotnet restore src
+
+# build platform, i.e. x86, x64, Any CPU. This setting is optional.
+platform: Any CPU
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration: Release
+
+build:
+  verbosity: minimal
+
+test_script:
+  - dotnet test src/SJP.DiskCache.Tests/SJP.DiskCache.Tests.csproj --configuration Release --logger:trx;LogFileName=SJP.DiskCache.Tests.results.xml
+  - ps: build/uploadtests.ps1 "src/SJP.DiskCache.Tests/TestResults/SJP.DiskCache.Tests.results.xml"
+
+notifications:
+- provider: Email
+  to:
+    - simon@sjp.co.nz
+  on_build_success: false
+  on_build_failure: true
+  on_build_status_changed: true

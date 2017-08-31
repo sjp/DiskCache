@@ -10,26 +10,52 @@ using System.Threading;
 
 namespace SJP.DiskCache
 {
+    /// <summary>
+    /// A disk-based caching store.
+    /// </summary>
     public class DiskCache : IDiskCache
     {
+        /// <summary>
+        /// Creates a disk-based caching store.
+        /// </summary>
+        /// <param name="directory">A directory.</param>
+        /// <param name="cachePolicy">A cache policy to apply to values in the cache.</param>
+        /// <param name="storageCapacity">The maximum amount of space to store in the cache.</param>
+        /// <param name="pollingInterval">The maximum time that will elapse before a cache policy will be applied. Defaults to 1 minute.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="directory"/> is <c>null</c> or <paramref name="cachePolicy"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="storageCapacity"/> is less than <c>1</c>. Can also be thrown when <paramref name="pollingInterval"/> represents a negative timespan or a zero-length timespan.</exception>
         public DiskCache(DirectoryInfo directory, ICachePolicy cachePolicy, ulong storageCapacity, TimeSpan? pollingInterval = null)
             : this(directory?.FullName ?? throw new ArgumentNullException(nameof(directory)), cachePolicy, storageCapacity, pollingInterval)
         {
         }
 
+        /// <summary>
+        /// Creates a disk-based caching store.
+        /// </summary>
+        /// <param name="directoryPath">A path to a directory.</param>
+        /// <param name="cachePolicy">A cache policy to apply to values in the cache.</param>
+        /// <param name="storageCapacity">The maximum amount of space to store in the cache.</param>
+        /// <param name="pollingInterval">The maximum time that will elapse before a cache policy will be applied. Defaults to 1 minute.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="directoryPath"/> is <c>null</c>, empty or whitespace. Also thrown when <paramref name="cachePolicy"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="storageCapacity"/> is less than <c>1</c>. Can also be thrown when <paramref name="pollingInterval"/> represents a negative timespan or a zero-length timespan.</exception>
         public DiskCache(string directoryPath, ICachePolicy cachePolicy, ulong storageCapacity, TimeSpan? pollingInterval = null)
         {
             if (string.IsNullOrWhiteSpace(directoryPath))
                 throw new ArgumentNullException(nameof(directoryPath));
             if (!Directory.Exists(directoryPath))
-                throw new ArgumentException("The cache directory does not exit.", nameof(directoryPath));
+                throw new ArgumentException($"The cache directory does not exist. The directory at '{ directoryPath }' must be present.", nameof(directoryPath));
             if (storageCapacity == 0)
                 throw new ArgumentOutOfRangeException("The storage capacity must be at least 1 byte. Given: " + storageCapacity.ToString(CultureInfo.InvariantCulture), nameof(storageCapacity));
+
+            pollingInterval = pollingInterval ?? TimeSpan.FromMinutes(1);
+            var interval = pollingInterval.Value;
+            if (interval < _zero)
+                throw new ArgumentException("The polling time interval must be a non-negative and non-zero timespan. Given: " + interval.ToString(), nameof(pollingInterval));
 
             CachePath = new DirectoryInfo(directoryPath);
             Policy = cachePolicy ?? throw new ArgumentNullException(nameof(cachePolicy));
             MaximumStorageCapacity = storageCapacity;
-            PollingInterval = pollingInterval ?? TimeSpan.FromMinutes(1);
+            PollingInterval = interval;
 
             // remove the contents of the cache dir to ensure that
             // the file size limits are tracked properly
@@ -39,7 +65,6 @@ namespace SJP.DiskCache
             foreach (var file in CachePath.EnumerateFiles())
                 file.Delete();
 
-            _pollingCancel = new CancellationToken();
             Task.Run(async () =>
             {
                 while (true)
@@ -47,23 +72,47 @@ namespace SJP.DiskCache
                     await Task.Delay(PollingInterval).ConfigureAwait(false);
                     ApplyCachePolicy();
                 }
-            }, _pollingCancel);
+            }, _cts.Token);
         }
 
+        /// <summary>
+        /// The maximum size that the cache can contain. This can be temporarily exceeded when the
+        /// </summary>
         public ulong MaximumStorageCapacity { get; }
 
+        /// <summary>
+        /// The maximum timespan that will occur before the cache policy will be re-evaluated on cache entries.
+        /// </summary>
         public TimeSpan PollingInterval { get; }
 
+        /// <summary>
+        /// The cache eviction policy that evaluates which entries should be removed from the cache.
+        /// </summary>
         public ICachePolicy Policy { get; }
 
+        /// <summary>
+        /// The directory that is storing the cache.
+        /// </summary>
         protected DirectoryInfo CachePath { get; }
 
+        /// <summary>
+        /// Occurs when an entry has been added to the cache.
+        /// </summary>
         public event EventHandler<ICacheEntry> EntryAdded;
 
+        /// <summary>
+        /// Occurs when an entry has been updated in the cache.
+        /// </summary>
         public event EventHandler<ICacheEntry> EntryUpdated;
 
+        /// <summary>
+        /// Occurs when an entry has been removed or evicted from the cache.
+        /// </summary>
         public event EventHandler<ICacheEntry> EntryRemoved;
 
+        /// <summary>
+        /// Empties the cache of all values that it is currently tracking.
+        /// </summary>
         public void Clear()
         {
             foreach (var entry in _entryLookup)
@@ -77,6 +126,12 @@ namespace SJP.DiskCache
             _fileLookup.Clear();
         }
 
+        /// <summary>
+        /// Determines whether the <see cref="IDiskCache" /> contains the specified key.
+        /// </summary>
+        /// <param name="key">The key to locate in the cache.</param>
+        /// <returns><c>true</c> if the cache contains the key; otherwise <c>false</c>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace.</exception>
         public bool ContainsKey(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -85,6 +140,12 @@ namespace SJP.DiskCache
             return _entryLookup.ContainsKey(key);
         }
 
+        /// <summary>
+        /// Asynchronously determines whether the <see cref="IDiskCache" /> contains the specified key.
+        /// </summary>
+        /// <param name="key">The key to locate in the cache.</param>
+        /// <returns><c>true</c> if the cache contains the key; otherwise <c>false</c>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace.</exception>
         public Task<bool> ContainsKeyAsync(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -93,6 +154,12 @@ namespace SJP.DiskCache
             return Task.Run(() => ContainsKey(key));
         }
 
+        /// <summary>
+        /// Gets the value associated with a key.
+        /// </summary>
+        /// <param name="key">The key to locate in the cache.</param>
+        /// <returns>A stream of data from the cache.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace.</exception>
         public Stream GetValue(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -111,6 +178,12 @@ namespace SJP.DiskCache
             return File.OpenRead(path);
         }
 
+        /// <summary>
+        /// Asynchronously gets the value associated with a key.
+        /// </summary>
+        /// <param name="key">The key to locate in the cache.</param>
+        /// <returns>A stream of data from the cache.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace.</exception>
         public Task<Stream> GetValueAsync(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -119,6 +192,13 @@ namespace SJP.DiskCache
             return Task.Run(() => GetValue(key));
         }
 
+        /// <summary>
+        /// Stores a value associated with a key.
+        /// </summary>
+        /// <param name="key">The key used to locate the value in the cache.</param>
+        /// <param name="value">A stream of data to store in the cache.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace. Can also be thrown when <paramref name="value"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="value"/> is not readable.</exception>
         public void SetValue(string key, Stream value)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -199,6 +279,14 @@ namespace SJP.DiskCache
             ApplyCachePolicy();
         }
 
+        /// <summary>
+        /// Stores a value associated with a key.
+        /// </summary>
+        /// <param name="key">The key used to locate the value in the cache.</param>
+        /// <param name="value">A stream of data to store in the cache.</param>
+        /// <returns><c>true</c> if the data was able to be stored without error; otherwise <c>false</c>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace. Can also be thrown when <paramref name="value"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="value"/> is not readable.</exception>
         public bool TrySetValue(string key, Stream value)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -280,6 +368,12 @@ namespace SJP.DiskCache
             return true;
         }
 
+        /// <summary>
+        /// Gets the value associated with a key.
+        /// </summary>
+        /// <param name="key">The key to locate in the cache.</param>
+        /// <param name="stream">A stream of data from the cache. Will be <c>null</c> when <paramref name="key" /> does not exist in the cache.</param>
+        /// <returns><c>true</c> if the cache contains the key; otherwise <c>false</c>.</returns>
         public bool TryGetValue(string key, out Stream stream)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -291,6 +385,11 @@ namespace SJP.DiskCache
             return hasValue;
         }
 
+        /// <summary>
+        /// Gets the value associated with a key.
+        /// </summary>
+        /// <param name="key">The key to locate in the cache.</param>
+        /// <returns>A tuple of two values. A boolean determines whether <paramref name="key" /> is present in the cache. If <paramref name="key" /> is present, the <see cref="Stream" /> value will be provided, otherwise it will be <c>null</c>.</returns>
         public (bool hasValue, Stream stream) TryGetValue(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -302,6 +401,11 @@ namespace SJP.DiskCache
             return (hasValue, stream);
         }
 
+        /// <summary>
+        /// Asynchronously gets the value associated with a key.
+        /// </summary>
+        /// <param name="key">The key to locate in the cache.</param>
+        /// <returns>A tuple of two values. A boolean determines whether <paramref name="key" /> is present in the cache. If <paramref name="key" /> is present, the <see cref="Stream" /> value will be provided, otherwise it will be <c>null</c>.</returns>
         public async Task<(bool hasValue, Stream stream)> TryGetValueAsync(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -315,8 +419,15 @@ namespace SJP.DiskCache
             return (hasValue, stream);
         }
 
+        /// <summary>
+        /// Releases all resources held by the cache. Additionally clears the cache directory.
+        /// </summary>
         public void Dispose() => Dispose(true);
 
+        /// <summary>
+        /// Releases all resources held by the cache. Additionally clears the cache directory.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> if managed resources are to be disposed. <c>false</c> will not dispose any resources.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed)
@@ -325,10 +436,14 @@ namespace SJP.DiskCache
             if (!disposing)
                 return;
 
+            _cts.Cancel();
             Clear();
             _disposed = true;
         }
 
+        /// <summary>
+        /// Applies the cache policy to all values held in the cache.
+        /// </summary>
         protected void ApplyCachePolicy()
         {
             var expiredEntries = Policy.GetExpiredEntries(_entryLookup.Values, MaximumStorageCapacity);
@@ -343,6 +458,11 @@ namespace SJP.DiskCache
             }
         }
 
+        /// <summary>
+        /// Retrives a fully qualified path used to store the cached value.
+        /// </summary>
+        /// <param name="hash">A hash of the contents of the cache.</param>
+        /// <returns>A fully qualified path for a cached value.</returns>
         protected virtual string GetPath(string hash)
         {
             if (string.IsNullOrWhiteSpace(hash))
@@ -359,12 +479,19 @@ namespace SJP.DiskCache
             return Path.Combine(CachePath.FullName, firstDir, secondDir, hash);
         }
 
+        /// <summary>
+        /// Convenience method used to determine whether a character is a valid hexadecimal character.
+        /// </summary>
+        /// <param name="c">A unicode character.</param>
+        /// <returns><c>true</c> if the value is a hexadecimal character; otherwise <c>false</c>.</returns>
         protected static bool IsValidHexChar(char c) => byte.TryParse(c.ToString(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var tmp);
 
-        private CancellationToken _pollingCancel;
         private bool _disposed;
 
+        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private readonly ConcurrentDictionary<string, ICacheEntry> _entryLookup = new ConcurrentDictionary<string, ICacheEntry>();
         private readonly ConcurrentDictionary<string, string> _fileLookup = new ConcurrentDictionary<string, string>();
+
+        private readonly static TimeSpan _zero = new TimeSpan(0);
     }
 }

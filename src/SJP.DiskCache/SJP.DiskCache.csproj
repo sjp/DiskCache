@@ -4,6 +4,20 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
     <TreatSpecificWarningsAsErrors />
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <Authors>Simon Potter</Authors>
+    <Company />
+    <Product />
+    <Description>Disk-based caching for large objects .NET</Description>
+    <Copyright>Copyright © Simon Potter 2017</Copyright>
+    <PackageLicenseUrl>https://raw.github.com/sjp/DiskCache/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/sjp/DiskCache</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sjp/DiskCache</RepositoryUrl>
+    <!--<PackageIconUrl>https://raw.github.com/sjp/DiskCache/master/diskcache.svg</PackageIconUrl>-->
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
 </Project>

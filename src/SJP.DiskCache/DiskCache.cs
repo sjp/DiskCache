@@ -23,7 +23,8 @@ namespace SJP.DiskCache
         /// <param name="storageCapacity">The maximum amount of space to store in the cache.</param>
         /// <param name="pollingInterval">The maximum time that will elapse before a cache policy will be applied. Defaults to 1 minute.</param>
         /// <exception cref="ArgumentNullException"><paramref name="directory"/> is <c>null</c> or <paramref name="cachePolicy"/> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentException"><paramref name="storageCapacity"/> is less than <c>1</c>. Can also be thrown when <paramref name="pollingInterval"/> represents a negative timespan or a zero-length timespan.</exception>
+        /// <exception cref="DirectoryNotFoundException"><paramref name="directory"/> does not exist.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="storageCapacity"/> is less than <c>1</c>. Can also be thrown when <paramref name="pollingInterval"/> represents a negative timespan or a zero-length timespan.</exception>
         public DiskCache(DirectoryInfo directory, ICachePolicy cachePolicy, ulong storageCapacity, TimeSpan? pollingInterval = null)
             : this(directory?.FullName ?? throw new ArgumentNullException(nameof(directory)), cachePolicy, storageCapacity, pollingInterval)
         {
@@ -37,33 +38,28 @@ namespace SJP.DiskCache
         /// <param name="storageCapacity">The maximum amount of space to store in the cache.</param>
         /// <param name="pollingInterval">The maximum time that will elapse before a cache policy will be applied. Defaults to 1 minute.</param>
         /// <exception cref="ArgumentNullException"><paramref name="directoryPath"/> is <c>null</c>, empty or whitespace. Also thrown when <paramref name="cachePolicy"/> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentException"><paramref name="storageCapacity"/> is less than <c>1</c>. Can also be thrown when <paramref name="pollingInterval"/> represents a negative timespan or a zero-length timespan.</exception>
+        /// <exception cref="DirectoryNotFoundException">The directory at <paramref name="directoryPath"/> does not exist.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="storageCapacity"/> is less than <c>1</c>. Can also be thrown when <paramref name="pollingInterval"/> represents a negative timespan or a zero-length timespan.</exception>
         public DiskCache(string directoryPath, ICachePolicy cachePolicy, ulong storageCapacity, TimeSpan? pollingInterval = null)
         {
             if (string.IsNullOrWhiteSpace(directoryPath))
                 throw new ArgumentNullException(nameof(directoryPath));
             if (!Directory.Exists(directoryPath))
-                throw new ArgumentException($"The cache directory does not exist. The directory at '{ directoryPath }' must be present.", nameof(directoryPath));
+                throw new DirectoryNotFoundException($"The cache directory does not exist. The directory at '{ directoryPath }' must be present.");
             if (storageCapacity == 0)
                 throw new ArgumentOutOfRangeException("The storage capacity must be at least 1 byte. Given: " + storageCapacity.ToString(CultureInfo.InvariantCulture), nameof(storageCapacity));
 
             pollingInterval = pollingInterval ?? TimeSpan.FromMinutes(1);
             var interval = pollingInterval.Value;
-            if (interval < _zero)
-                throw new ArgumentException("The polling time interval must be a non-negative and non-zero timespan. Given: " + interval.ToString(), nameof(pollingInterval));
+            if (interval <= _zero)
+                throw new ArgumentOutOfRangeException("The polling time interval must be a non-negative and non-zero timespan. Given: " + interval.ToString(), nameof(pollingInterval));
 
             CachePath = new DirectoryInfo(directoryPath);
             Policy = cachePolicy ?? throw new ArgumentNullException(nameof(cachePolicy));
             MaximumStorageCapacity = storageCapacity;
             PollingInterval = interval;
 
-            // remove the contents of the cache dir to ensure that
-            // the file size limits are tracked properly
-            foreach (var dir in CachePath.EnumerateDirectories())
-                dir.Delete(true);
-
-            foreach (var file in CachePath.EnumerateFiles())
-                file.Delete();
+            Clear();
 
             Task.Run(async () =>
             {
@@ -76,7 +72,7 @@ namespace SJP.DiskCache
         }
 
         /// <summary>
-        /// The maximum size that the cache can contain. This can be temporarily exceeded when the
+        /// The maximum size that the cache can contain. This can be temporarily exceeded when a file is added that is too large, to a maximum of twice the storage capacity.
         /// </summary>
         public ulong MaximumStorageCapacity { get; }
 
@@ -119,8 +115,14 @@ namespace SJP.DiskCache
             {
                 File.Delete(_fileLookup[entry.Key]);
                 _entryLookup.TryRemove(entry.Key, out var lookupEntry);
-                EntryAdded?.Invoke(this, lookupEntry);
+                EntryRemoved?.Invoke(this, lookupEntry);
             }
+
+            foreach (var dir in CachePath.EnumerateDirectories())
+                dir.Delete(true);
+
+            foreach (var file in CachePath.EnumerateFiles())
+                file.Delete();
 
             _entryLookup.Clear();
             _fileLookup.Clear();

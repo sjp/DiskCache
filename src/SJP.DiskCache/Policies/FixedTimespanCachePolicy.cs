@@ -16,8 +16,8 @@ namespace SJP.DiskCache
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeSpan"/> is a negative or zero-length timespan.</exception>
         public FixedTimespanCachePolicy(TimeSpan timeSpan)
         {
-            if (timeSpan < _zero)
-                throw new ArgumentOutOfRangeException("Expiration time spans must be non-negative. The given timespan was instead " + timeSpan.ToString(), nameof(timeSpan));
+            if (timeSpan <= _zero)
+                throw new ArgumentOutOfRangeException("Expiration time spans must be non-negative and non-zero. The given timespan was instead " + timeSpan.ToString(), nameof(timeSpan));
 
             ExpirationTimespan = timeSpan;
         }

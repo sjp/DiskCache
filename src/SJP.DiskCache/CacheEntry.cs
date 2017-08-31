@@ -66,6 +66,6 @@ namespace SJP.DiskCache
         }
 
         private long _accessCount;
-        private Stopwatch _lastAccessedTimer;
+        private readonly Stopwatch _lastAccessedTimer;
     }
 }

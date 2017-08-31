@@ -75,12 +75,12 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public async Task LastAccessed_OnPropertyGet_IncreasesOverTime()
+        public void LastAccessed_OnPropertyGet_IncreasesOverTime()
         {
             var entry = new CacheEntry("test", 123);
 
             var start = entry.CreationTime;
-            await Task.Delay(100).ConfigureAwait(false);
+            Task.Delay(1000).Wait();
             var end = entry.LastAccessed;
 
             Assert.Greater(end, start);

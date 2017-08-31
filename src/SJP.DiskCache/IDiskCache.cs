@@ -97,11 +97,26 @@ namespace SJP.DiskCache
         void SetValue(string key, Stream value);
 
         /// <summary>
+        /// Asynchronously stores a value associated with a key.
+        /// </summary>
+        /// <param name="key">The key used to locate the value in the cache.</param>
+        /// <param name="value">A stream of data to store in the cache.</param>
+        Task SetValueAsync(string key, Stream value);
+
+        /// <summary>
         /// Stores a value associated with a key.
         /// </summary>
         /// <param name="key">The key used to locate the value in the cache.</param>
         /// <param name="value">A stream of data to store in the cache.</param>
         /// <returns><c>true</c> if the data was able to be stored without error; otherwise <c>false</c>.</returns>
         bool TrySetValue(string key, Stream value);
+
+        /// <summary>
+        /// Asynchronously stores a value associated with a key.
+        /// </summary>
+        /// <param name="key">The key used to locate the value in the cache.</param>
+        /// <param name="value">A stream of data to store in the cache.</param>
+        /// <returns><c>true</c> if the data was able to be stored without error; otherwise <c>false</c>.</returns>
+        Task<bool> TrySetValueAsync(string key, Stream value);
     }
 }

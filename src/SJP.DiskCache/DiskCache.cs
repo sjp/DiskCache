@@ -371,6 +371,178 @@ namespace SJP.DiskCache
         }
 
         /// <summary>
+        /// Asynchronously stores a value associated with a key.
+        /// </summary>
+        /// <param name="key">The key used to locate the value in the cache.</param>
+        /// <param name="value">A stream of data to store in the cache.</param>
+        public async Task SetValueAsync(string key, Stream value)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentNullException(nameof(key));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (!value.CanRead)
+                throw new ArgumentException("The given stream is not readable.", nameof(value));
+
+            ulong totalBytesRead = 0;
+            const long bufferSize = 4096;
+
+            var tmpFileName = Path.Combine(CachePath.FullName, Guid.NewGuid().ToString());
+            string hash = null;
+
+            using (var shaHasher = new SHA256Managed())
+            {
+                using (var writer = File.OpenWrite(tmpFileName))
+                {
+                    byte[] oldBuffer;
+                    int oldBytesRead;
+
+                    var buffer = new byte[bufferSize];
+                    var bytesRead = await value.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                    totalBytesRead += Convert.ToUInt32(bytesRead);
+
+                    do
+                    {
+                        oldBytesRead = bytesRead;
+                        oldBuffer = buffer;
+
+                        buffer = new byte[bufferSize];
+                        bytesRead = await value.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                        totalBytesRead += Convert.ToUInt32(bytesRead);
+
+                        if (bytesRead == 0)
+                        {
+                            shaHasher.TransformFinalBlock(oldBuffer, 0, oldBytesRead);
+                            await writer.WriteAsync(oldBuffer, 0, oldBytesRead).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            shaHasher.TransformBlock(oldBuffer, 0, oldBytesRead, oldBuffer, 0);
+                            await writer.WriteAsync(oldBuffer, 0, oldBytesRead).ConfigureAwait(false);
+                        }
+                    }
+                    while (bytesRead != 0 && totalBytesRead <= MaximumStorageCapacity);
+                }
+
+                if (totalBytesRead > MaximumStorageCapacity)
+                {
+                    File.Delete(tmpFileName); // remove the file, we can't keep it anyway
+                    throw new ArgumentException("The given stream received data that was larger than the allotted storage capacity of " + MaximumStorageCapacity.ToString(CultureInfo.InvariantCulture), nameof(value));
+                }
+
+                var shaHashBytes = shaHasher.Hash;
+                hash = BitConverter.ToString(shaHashBytes).Replace("-", string.Empty);
+            }
+
+            var isNew = !ContainsKey(key);
+
+            var cachePath = GetPath(hash);
+            var cachePathDir = Path.GetDirectoryName(cachePath);
+            if (!Directory.Exists(cachePathDir))
+                Directory.CreateDirectory(cachePathDir);
+            File.Move(tmpFileName, cachePath);
+            var cacheFileInfo = new FileInfo(cachePath);
+
+            _fileLookup[key] = cachePath;
+            var cacheEntry = new CacheEntry(key, Convert.ToUInt64(cacheFileInfo.Length));
+            _entryLookup[key] = cacheEntry;
+
+            if (isNew)
+                EntryAdded?.Invoke(this, cacheEntry);
+            else
+                EntryUpdated?.Invoke(this, cacheEntry);
+
+            ApplyCachePolicy();
+        }
+
+        /// <summary>
+        /// Asynchronously stores a value associated with a key.
+        /// </summary>
+        /// <param name="key">The key used to locate the value in the cache.</param>
+        /// <param name="value">A stream of data to store in the cache.</param>
+        /// <returns><c>true</c> if the data was able to be stored without error; otherwise <c>false</c>.</returns>
+        public async Task<bool> TrySetValueAsync(string key, Stream value)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                throw new ArgumentNullException(nameof(key));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (!value.CanRead)
+                throw new ArgumentException("The given stream is not readable.", nameof(value));
+
+            ulong totalBytesRead = 0;
+            const long bufferSize = 4096;
+
+            var tmpFileName = Path.Combine(CachePath.FullName, Guid.NewGuid().ToString());
+            string hash = null;
+
+            using (var shaHasher = new SHA256Managed())
+            {
+                using (var writer = File.OpenWrite(tmpFileName))
+                {
+                    byte[] oldBuffer;
+                    int oldBytesRead;
+
+                    var buffer = new byte[bufferSize];
+                    var bytesRead = await value.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                    totalBytesRead += Convert.ToUInt32(bytesRead);
+
+                    do
+                    {
+                        oldBytesRead = bytesRead;
+                        oldBuffer = buffer;
+
+                        buffer = new byte[bufferSize];
+                        bytesRead = await value.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                        totalBytesRead += Convert.ToUInt32(bytesRead);
+
+                        if (bytesRead == 0)
+                        {
+                            shaHasher.TransformFinalBlock(oldBuffer, 0, oldBytesRead);
+                            await writer.WriteAsync(oldBuffer, 0, oldBytesRead).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            shaHasher.TransformBlock(oldBuffer, 0, oldBytesRead, oldBuffer, 0);
+                            await writer.WriteAsync(oldBuffer, 0, oldBytesRead).ConfigureAwait(false);
+                        }
+                    }
+                    while (bytesRead != 0 && totalBytesRead <= MaximumStorageCapacity);
+                }
+
+                if (totalBytesRead > MaximumStorageCapacity)
+                {
+                    File.Delete(tmpFileName); // remove the file, we can't keep it anyway
+                    return false;
+                }
+
+                var shaHashBytes = shaHasher.Hash;
+                hash = BitConverter.ToString(shaHashBytes).Replace("-", string.Empty);
+            }
+
+            var isNew = !ContainsKey(key);
+
+            var cachePath = GetPath(hash);
+            var cachePathDir = Path.GetDirectoryName(cachePath);
+            if (!Directory.Exists(cachePathDir))
+                Directory.CreateDirectory(cachePathDir);
+            File.Move(tmpFileName, cachePath);
+            var cacheFileInfo = new FileInfo(cachePath);
+
+            _fileLookup[key] = cachePath;
+            var cacheEntry = new CacheEntry(key, Convert.ToUInt64(cacheFileInfo.Length));
+            _entryLookup[key] = cacheEntry;
+
+            if (isNew)
+                EntryAdded?.Invoke(this, cacheEntry);
+            else
+                EntryUpdated?.Invoke(this, cacheEntry);
+
+            ApplyCachePolicy();
+            return true;
+        }
+
+        /// <summary>
         /// Gets the value associated with a key.
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>

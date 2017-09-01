@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
@@ -7,16 +8,17 @@ namespace SJP.DiskCache
     /// <summary>
     /// A cache entry to be used for assisting with accessing and applying cache policies within a disk cache.
     /// </summary>
-    public class CacheEntry : ICacheEntry
+    /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
+    public class CacheEntry<TKey> : ICacheEntry<TKey> where TKey : IEquatable<TKey>
     {
         /// <summary>
         /// Initializes a cache entry.
         /// </summary>
         /// <param name="key">The key of the cache entry that is used to retrieve data from a disk cache.</param>
         /// <param name="size">The size (on disk) of the data that the key is associated with.</param>
-        public CacheEntry(string key, ulong size)
+        public CacheEntry(TKey key, ulong size)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
             if (size == 0)
                 throw new ArgumentException("The file size must be non-zero.", nameof(size));
@@ -34,7 +36,7 @@ namespace SJP.DiskCache
         /// <summary>
         /// The key that the entry represents when looking up in the cache.
         /// </summary>
-        public string Key { get; }
+        public TKey Key { get; }
 
         /// <summary>
         /// The size of the data that the cache entry is associated with.
@@ -65,7 +67,11 @@ namespace SJP.DiskCache
             _lastAccessedTimer.Restart();
         }
 
+        private static bool IsNull(TKey key) => !_isValueType && EqualityComparer<TKey>.Default.Equals(key, default(TKey));
+
         private long _accessCount;
         private readonly Stopwatch _lastAccessedTimer;
+
+        private readonly static bool _isValueType = typeof(TKey).IsValueType;
     }
 }

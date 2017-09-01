@@ -7,19 +7,22 @@ namespace SJP.DiskCache
     /// <summary>
     /// Evicts values in a cache that have been stored for a given time period.
     /// </summary>
-    public class FixedTimespanCachePolicy : ICachePolicy
+    /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
+    public class FixedTimespanCachePolicy<TKey> : ICachePolicy<TKey>
     {
         /// <summary>
         /// Initializes a fixed timespan cache policy.
         /// </summary>
         /// <param name="timeSpan">The timespan that a value should be kept in the cache for.</param>
+        /// <param name="keyComparer">The <see cref="IEqualityComparer{TKey}"/> implementation to use when comparing cache keys, or <c>null</c> to use the default <see cref="EqualityComparer{TKey}"/> implementation for the set type.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeSpan"/> is a negative or zero-length timespan.</exception>
-        public FixedTimespanCachePolicy(TimeSpan timeSpan)
+        public FixedTimespanCachePolicy(TimeSpan timeSpan, IEqualityComparer<TKey> keyComparer = null)
         {
             if (timeSpan <= _zero)
                 throw new ArgumentOutOfRangeException("Expiration time spans must be non-negative and non-zero. The given timespan was instead " + timeSpan.ToString(), nameof(timeSpan));
 
             ExpirationTimespan = timeSpan;
+            KeyComparer = keyComparer ?? EqualityComparer<TKey>.Default;
         }
 
         /// <summary>
@@ -28,15 +31,24 @@ namespace SJP.DiskCache
         public TimeSpan ExpirationTimespan { get; }
 
         /// <summary>
+        /// The <see cref="IEqualityComparer{TKey}"/> implementation to use when comparing cache keys.
+        /// </summary>
+        protected IEqualityComparer<TKey> KeyComparer { get; }
+
+        /// <summary>
         /// Retrives the set of entries that are now expired in the cache.
         /// </summary>
         /// <param name="entries">The set of cache entries to evaluate.</param>
         /// <param name="maximumStorageCapacity">The maximum size of the disk cache. Useful for determining ordering of cache entries.</param>
         /// <returns>A collection of entries that should be evicted from the cache.</returns>
-        public IEnumerable<ICacheEntry> GetExpiredEntries(IEnumerable<ICacheEntry> entries, ulong maximumStorageCapacity)
+        /// <exception cref="ArgumentNullException"><paramref name="entries"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maximumStorageCapacity"/> is equal to zero.</exception>
+        public IEnumerable<ICacheEntry<TKey>> GetExpiredEntries(IEnumerable<ICacheEntry<TKey>> entries, ulong maximumStorageCapacity)
         {
             if (entries == null)
                 throw new ArgumentNullException(nameof(entries));
+            if (maximumStorageCapacity == 0)
+                throw new ArgumentOutOfRangeException("The maximum storage capacity must be non-zero.", nameof(maximumStorageCapacity));
 
             var currentTime = DateTime.Now;
             ulong totalSum = 0;
@@ -53,7 +65,7 @@ namespace SJP.DiskCache
                 .Select(e => e.Key)
                 .ToList();
 
-            var validKeySet = new HashSet<string>(validKeys);
+            var validKeySet = new HashSet<TKey>(validKeys, KeyComparer);
             return entries.Where(e => !validKeySet.Contains(e.Key)).ToList();
         }
 

@@ -10,32 +10,20 @@ namespace SJP.DiskCache.Tests
         [Test]
         public void Ctor_GivenNullString_ThrowsArgNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => new CacheEntry(null, 123));
-        }
-
-        [Test]
-        public void Ctor_GivenEmptyString_ThrowsArgNullException()
-        {
-            Assert.Throws<ArgumentNullException>(() => new CacheEntry(string.Empty, 123));
-        }
-
-        [Test]
-        public void Ctor_GivenWhiteSpaceString_ThrowsArgNullException()
-        {
-            Assert.Throws<ArgumentNullException>(() => new CacheEntry("   ", 123));
+            Assert.Throws<ArgumentNullException>(() => new CacheEntry<string>(null, 123));
         }
 
         [Test]
         public void Ctor_GivenZeroSize_ThrowsArgException()
         {
-            Assert.Throws<ArgumentException>(() => new CacheEntry("test", 0));
+            Assert.Throws<ArgumentException>(() => new CacheEntry<string>("test", 0));
         }
 
         [Test]
         public void Key_OnObjectCreate_SetToCtorArg()
         {
             const string expected = "test";
-            var entry = new CacheEntry(expected, 123);
+            var entry = new CacheEntry<string>(expected, 123);
 
             Assert.AreEqual(expected, entry.Key);
         }
@@ -44,7 +32,7 @@ namespace SJP.DiskCache.Tests
         public void Size_OnObjectCreate_SetToCtorArg()
         {
             const ulong expected = 123;
-            var entry = new CacheEntry("test", expected);
+            var entry = new CacheEntry<string>("test", expected);
 
             Assert.AreEqual(expected, entry.Size);
         }
@@ -52,7 +40,7 @@ namespace SJP.DiskCache.Tests
         [Test]
         public void LastAccessed_OnObjectCreate_InitializedToCreationTime()
         {
-            var entry = new CacheEntry("test", 123);
+            var entry = new CacheEntry<string>("test", 123);
 
             var start = entry.CreationTime;
             var end = entry.LastAccessed;
@@ -64,7 +52,7 @@ namespace SJP.DiskCache.Tests
         [Test]
         public void AccessCount_WhenAccessed_IsIncremented()
         {
-            var entry = new CacheEntry("test", 123);
+            var entry = new CacheEntry<string>("test", 123);
             Assert.AreEqual(0, entry.AccessCount);
 
             entry.Refresh();
@@ -92,7 +80,7 @@ namespace SJP.DiskCache.Tests
         [Test]
         public async Task Refresh_WhenInvoked_ResetsLastAccessed()
         {
-            var entry = new CacheEntry("test", 123);
+            var entry = new CacheEntry<string>("test", 123);
 
             var accessedTime = entry.LastAccessed;
             await Task.Delay(100).ConfigureAwait(false);

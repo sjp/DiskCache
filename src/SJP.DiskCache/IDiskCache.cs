@@ -7,7 +7,8 @@ namespace SJP.DiskCache
     /// <summary>
     /// Defines methods, properties and events used to manage a disk-based cache.
     /// </summary>
-    public interface IDiskCache : IDisposable
+    /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
+    public interface IDiskCache<TKey> : IDisposable
     {
         /// <summary>
         /// The maximum size that the cache can contain.
@@ -17,22 +18,22 @@ namespace SJP.DiskCache
         /// <summary>
         /// The cache eviction policy that evaluates which entries should be removed from the cache.
         /// </summary>
-        ICachePolicy Policy { get; }
+        ICachePolicy<TKey> Policy { get; }
 
         /// <summary>
         /// Occurs when an entry has been added to the cache.
         /// </summary>
-        event EventHandler<ICacheEntry> EntryAdded;
+        event EventHandler<ICacheEntry<TKey>> EntryAdded;
 
         /// <summary>
         /// Occurs when an entry has been updated in the cache.
         /// </summary>
-        event EventHandler<ICacheEntry> EntryUpdated;
+        event EventHandler<ICacheEntry<TKey>> EntryUpdated;
 
         /// <summary>
         /// Occurs when an entry has been removed or evicted from the cache.
         /// </summary>
-        event EventHandler<ICacheEntry> EntryRemoved;
+        event EventHandler<ICacheEntry<TKey>> EntryRemoved;
 
         /// <summary>
         /// Empties the cache of all values that it is currently tracking.
@@ -40,25 +41,25 @@ namespace SJP.DiskCache
         void Clear();
 
         /// <summary>
-        /// Determines whether the <see cref="IDiskCache"/> contains the specified key.
+        /// Determines whether the <see cref="IDiskCache{T}"/> contains the specified key.
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns><c>true</c> if the cache contains the key; otherwise <c>false</c>.</returns>
-        bool ContainsKey(string key);
+        bool ContainsKey(TKey key);
 
         /// <summary>
-        /// Asynchronously determines whether the <see cref="IDiskCache"/> contains the specified key.
+        /// Asynchronously determines whether the <see cref="IDiskCache{T}"/> contains the specified key.
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns><c>true</c> if the cache contains the key; otherwise <c>false</c>.</returns>
-        Task<bool> ContainsKeyAsync(string key);
+        Task<bool> ContainsKeyAsync(TKey key);
 
         /// <summary>
         /// Gets the value associated with a key.
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A stream of data from the cache.</returns>
-        Stream GetValue(string key);
+        Stream GetValue(TKey key);
 
         /// <summary>
         /// Gets the value associated with a key.
@@ -66,42 +67,42 @@ namespace SJP.DiskCache
         /// <param name="key">The key to locate in the cache.</param>
         /// <param name="stream">A stream of data from the cache. Will be <c>null</c> when <paramref name="key"/> does not exist in the cache.</param>
         /// <returns><c>true</c> if the cache contains the key; otherwise <c>false</c>.</returns>
-        bool TryGetValue(string key, out Stream stream);
+        bool TryGetValue(TKey key, out Stream stream);
 
         /// <summary>
         /// Gets the value associated with a key.
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A tuple of two values. A boolean determines whether <paramref name="key"/> is present in the cache. If <paramref name="key"/> is present, the <see cref="Stream"/> value will be provided, otherwise it will be <c>null</c>.</returns>
-        (bool hasValue, Stream stream) TryGetValue(string key);
+        (bool hasValue, Stream stream) TryGetValue(TKey key);
 
         /// <summary>
         /// Asynchronously gets the value associated with a key.
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A stream of data from the cache.</returns>
-        Task<Stream> GetValueAsync(string key);
+        Task<Stream> GetValueAsync(TKey key);
 
         /// <summary>
         /// Asynchronously gets the value associated with a key.
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A tuple of two values. A boolean determines whether <paramref name="key"/> is present in the cache. If <paramref name="key"/> is present, the <see cref="Stream"/> value will be provided, otherwise it will be <c>null</c>.</returns>
-        Task<(bool hasValue, Stream stream)> TryGetValueAsync(string key);
+        Task<(bool hasValue, Stream stream)> TryGetValueAsync(TKey key);
 
         /// <summary>
         /// Stores a value associated with a key.
         /// </summary>
         /// <param name="key">The key used to locate the value in the cache.</param>
         /// <param name="value">A stream of data to store in the cache.</param>
-        void SetValue(string key, Stream value);
+        void SetValue(TKey key, Stream value);
 
         /// <summary>
         /// Asynchronously stores a value associated with a key.
         /// </summary>
         /// <param name="key">The key used to locate the value in the cache.</param>
         /// <param name="value">A stream of data to store in the cache.</param>
-        Task SetValueAsync(string key, Stream value);
+        Task SetValueAsync(TKey key, Stream value);
 
         /// <summary>
         /// Stores a value associated with a key.
@@ -109,7 +110,7 @@ namespace SJP.DiskCache
         /// <param name="key">The key used to locate the value in the cache.</param>
         /// <param name="value">A stream of data to store in the cache.</param>
         /// <returns><c>true</c> if the data was able to be stored without error; otherwise <c>false</c>.</returns>
-        bool TrySetValue(string key, Stream value);
+        bool TrySetValue(TKey key, Stream value);
 
         /// <summary>
         /// Asynchronously stores a value associated with a key.
@@ -117,6 +118,6 @@ namespace SJP.DiskCache
         /// <param name="key">The key used to locate the value in the cache.</param>
         /// <param name="value">A stream of data to store in the cache.</param>
         /// <returns><c>true</c> if the data was able to be stored without error; otherwise <c>false</c>.</returns>
-        Task<bool> TrySetValueAsync(string key, Stream value);
+        Task<bool> TrySetValueAsync(TKey key, Stream value);
     }
 }

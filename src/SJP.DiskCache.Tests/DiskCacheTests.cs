@@ -13,81 +13,81 @@ namespace SJP.DiskCache.Tests
         [Test]
         public void Ctor_GivenNullDirectory_ThrowsArgNullException()
         {
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            Assert.Throws<ArgumentNullException>(() => new DiskCache((DirectoryInfo)null, cachePolicy, 123));
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            Assert.Throws<ArgumentNullException>(() => new DiskCache<string>((DirectoryInfo)null, cachePolicy, 123));
         }
 
         [Test]
         public void Ctor_GivenNullCachePolicy_ThrowsArgNullException()
         {
             var dir = new DirectoryInfo(Environment.CurrentDirectory);
-            Assert.Throws<ArgumentNullException>(() => new DiskCache(dir, null, 123));
+            Assert.Throws<ArgumentNullException>(() => new DiskCache<string>(dir, null, 123));
         }
 
         [Test]
         public void Ctor_GivenZeroStorageCapacity_ThrowsArgOutOfRangeException()
         {
             var dir = new DirectoryInfo(Environment.CurrentDirectory);
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DiskCache(dir, cachePolicy, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DiskCache<string>(dir, cachePolicy, 0));
         }
 
         [Test]
         public void Ctor_GivenNegativeInterval_ThrowsArgOutOfRangeException()
         {
             var dir = new DirectoryInfo(Environment.CurrentDirectory);
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DiskCache(dir, cachePolicy, size, TimeSpan.FromSeconds(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DiskCache<string>(dir, cachePolicy, size, TimeSpan.FromSeconds(-1)));
         }
 
         [Test]
         public void Ctor_GivenZeroInterval_ThrowsArgOutOfRangeException()
         {
             var dir = new DirectoryInfo(Environment.CurrentDirectory);
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new DiskCache(dir, cachePolicy, size, TimeSpan.FromSeconds(0)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DiskCache<string>(dir, cachePolicy, size, TimeSpan.FromSeconds(0)));
         }
 
         [Test]
         public void Ctor_GivenNullDirectoryPath_ThrowsArgNullException()
         {
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
 
-            Assert.Throws<ArgumentNullException>(() => new DiskCache((string)null, cachePolicy, size));
+            Assert.Throws<ArgumentNullException>(() => new DiskCache<string>((string)null, cachePolicy, size));
         }
 
         [Test]
         public void Ctor_GivenEmptyDirectoryPath_ThrowsArgNullException()
         {
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
 
-            Assert.Throws<ArgumentNullException>(() => new DiskCache(string.Empty, cachePolicy, size));
+            Assert.Throws<ArgumentNullException>(() => new DiskCache<string>(string.Empty, cachePolicy, size));
         }
 
         [Test]
         public void Ctor_GivenWhiteSpaceDirectoryPath_ThrowsArgNullException()
         {
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
 
-            Assert.Throws<ArgumentNullException>(() => new DiskCache("   ", cachePolicy, size));
+            Assert.Throws<ArgumentNullException>(() => new DiskCache<string>("   ", cachePolicy, size));
         }
 
         [Test]
         public void Ctor_GivenNonExistentDirectory_ThrowsDirNotFoundException()
         {
             var dir = Path.Combine(Environment.CurrentDirectory, "asdasdasd");
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
 
-            Assert.Throws<DirectoryNotFoundException>(() => new DiskCache(dir, cachePolicy, size));
+            Assert.Throws<DirectoryNotFoundException>(() => new DiskCache<string>(dir, cachePolicy, size));
         }
 
         [Test]
@@ -98,47 +98,11 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 Assert.Throws<ArgumentNullException>(() => cache.ContainsKey(null));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void ContainsKey_GivenEmptyKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "containskey_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.Throws<ArgumentNullException>(() => cache.ContainsKey(string.Empty));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void ContainsKey_GivenWhiteSpaceKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "containskey_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.Throws<ArgumentNullException>(() => cache.ContainsKey("  "));
             }
 
             testDir.Delete(true);
@@ -152,47 +116,11 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.ContainsKeyAsync(null).ConfigureAwait(false));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void ContainsKeyAsync_GivenEmptyKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "containskeyasync_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.ContainsKeyAsync(string.Empty).ConfigureAwait(false));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void ContainsKeyAsync_GivenWhiteSpaceKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "containskeyasync_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.ContainsKeyAsync("  ").ConfigureAwait(false));
             }
 
             testDir.Delete(true);
@@ -206,47 +134,11 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 Assert.Throws<ArgumentNullException>(() => cache.GetValue(null));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void GetValue_GivenEmptyKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalue_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.Throws<ArgumentNullException>(() => cache.GetValue(string.Empty));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void GetValue_GivenWhiteSpaceKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalue_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.Throws<ArgumentNullException>(() => cache.GetValue("  "));
             }
 
             testDir.Delete(true);
@@ -260,61 +152,15 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.GetValueAsync(null).ConfigureAwait(false));
             }
 
             testDir.Delete(true);
         }
-
-        [Test]
-        public void GetValueAsync_GivenEmptyKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalueasync_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.GetValueAsync(string.Empty).ConfigureAwait(false));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void GetValueAsync_GivenWhiteSpaceKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalueasync_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.GetValueAsync("  ").ConfigureAwait(false));
-            }
-
-            testDir.Delete(true);
-        }
-
-
-
-
-
-
-
-
-
-
 
         [Test]
         public void TryGetValue_GivenNullKey_ThrowsArgNullException()
@@ -324,47 +170,11 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 Assert.Throws<ArgumentNullException>(() => cache.TryGetValue(null, out var tmp));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void TryGetValue_GivenEmptyKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalue_out_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.Throws<ArgumentNullException>(() => cache.TryGetValue(string.Empty, out var tmp));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void TryGetValue_GivenWhiteSpaceKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalue_out_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.Throws<ArgumentNullException>(() => cache.TryGetValue("  ", out var tmp));
             }
 
             testDir.Delete(true);
@@ -378,47 +188,11 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 Assert.Throws<ArgumentNullException>(() => cache.TryGetValue(null));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void TryGetValueTuple_GivenEmptyKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalue_tuple_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.Throws<ArgumentNullException>(() => cache.TryGetValue(string.Empty));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void TryGetValueTuple_GivenWhiteSpaceKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalue_tuple_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.Throws<ArgumentNullException>(() => cache.TryGetValue("  "));
             }
 
             testDir.Delete(true);
@@ -432,47 +206,11 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.TryGetValueAsync(null).ConfigureAwait(false));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void TryGetValueAsyncTuple_GivenEmptyKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalueasync_tuple_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.TryGetValueAsync(string.Empty).ConfigureAwait(false));
-            }
-
-            testDir.Delete(true);
-        }
-
-        [Test]
-        public void TryGetValueAsyncTuple_GivenWhiteSpaceKey_ThrowsArgNullException()
-        {
-            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalueasync_tuple_test");
-            var testDir = new DirectoryInfo(testDirPath);
-            if (!testDir.Exists)
-                testDir.Create();
-
-            var cachePolicy = Mock.Of<ICachePolicy>();
-            const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
-            {
-                Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.TryGetValueAsync("  ").ConfigureAwait(false));
             }
 
             testDir.Delete(true);
@@ -486,9 +224,9 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 Assert.IsFalse(cache.ContainsKey("asd"));
             }
@@ -504,9 +242,9 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 var containsKey = await cache.ContainsKeyAsync("asd").ConfigureAwait(false);
                 Assert.IsFalse(containsKey);
@@ -523,9 +261,9 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 Assert.Throws<KeyNotFoundException>(() => cache.GetValue("asd"));
             }
@@ -541,9 +279,9 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 Assert.ThrowsAsync<KeyNotFoundException>(async () => await cache.GetValueAsync("asd").ConfigureAwait(false));
             }
@@ -559,9 +297,9 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 var result = cache.TryGetValue("asd", out var stream);
                 Assert.Multiple(() =>
@@ -582,9 +320,9 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 var result = cache.TryGetValue("asd");
                 Assert.Multiple(() =>
@@ -605,9 +343,9 @@ namespace SJP.DiskCache.Tests
             if (!testDir.Exists)
                 testDir.Create();
 
-            var cachePolicy = Mock.Of<ICachePolicy>();
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
-            using (var cache = new DiskCache(testDir, cachePolicy, size))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 var result = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
                 Assert.Multiple(() =>

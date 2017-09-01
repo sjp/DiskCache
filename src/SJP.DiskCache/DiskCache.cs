@@ -13,7 +13,8 @@ namespace SJP.DiskCache
     /// <summary>
     /// A disk-based caching store.
     /// </summary>
-    public class DiskCache : IDiskCache
+    /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
+    public class DiskCache<TKey> : IDiskCache<TKey> where TKey : IEquatable<TKey>
     {
         /// <summary>
         /// Creates a disk-based caching store.
@@ -22,11 +23,12 @@ namespace SJP.DiskCache
         /// <param name="cachePolicy">A cache policy to apply to values in the cache.</param>
         /// <param name="storageCapacity">The maximum amount of space to store in the cache.</param>
         /// <param name="pollingInterval">The maximum time that will elapse before a cache policy will be applied. Defaults to 1 minute.</param>
+        /// <param name="keyComparer">The <see cref="IEqualityComparer{TKey}"/> implementation to use when comparing cache keys, or <c>null</c> to use the default <see cref="EqualityComparer{TKey}"/> implementation for the set type.</param>
         /// <exception cref="ArgumentNullException"><paramref name="directory"/> is <c>null</c> or <paramref name="cachePolicy"/> is <c>null</c>.</exception>
         /// <exception cref="DirectoryNotFoundException"><paramref name="directory"/> does not exist.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="storageCapacity"/> is less than <c>1</c>. Can also be thrown when <paramref name="pollingInterval"/> represents a negative timespan or a zero-length timespan.</exception>
-        public DiskCache(DirectoryInfo directory, ICachePolicy cachePolicy, ulong storageCapacity, TimeSpan? pollingInterval = null)
-            : this(directory?.FullName ?? throw new ArgumentNullException(nameof(directory)), cachePolicy, storageCapacity, pollingInterval)
+        public DiskCache(DirectoryInfo directory, ICachePolicy<TKey> cachePolicy, ulong storageCapacity, TimeSpan? pollingInterval = null, IEqualityComparer<TKey> keyComparer = null)
+            : this(directory?.FullName ?? throw new ArgumentNullException(nameof(directory)), cachePolicy, storageCapacity, pollingInterval, keyComparer)
         {
         }
 
@@ -37,10 +39,11 @@ namespace SJP.DiskCache
         /// <param name="cachePolicy">A cache policy to apply to values in the cache.</param>
         /// <param name="storageCapacity">The maximum amount of space to store in the cache.</param>
         /// <param name="pollingInterval">The maximum time that will elapse before a cache policy will be applied. Defaults to 1 minute.</param>
+        /// <param name="keyComparer">The <see cref="IEqualityComparer{TKey}"/> implementation to use when comparing cache keys, or <c>null</c> to use the default <see cref="EqualityComparer{TKey}"/> implementation for the set type.</param>
         /// <exception cref="ArgumentNullException"><paramref name="directoryPath"/> is <c>null</c>, empty or whitespace. Also thrown when <paramref name="cachePolicy"/> is <c>null</c>.</exception>
         /// <exception cref="DirectoryNotFoundException">The directory at <paramref name="directoryPath"/> does not exist.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="storageCapacity"/> is less than <c>1</c>. Can also be thrown when <paramref name="pollingInterval"/> represents a negative timespan or a zero-length timespan.</exception>
-        public DiskCache(string directoryPath, ICachePolicy cachePolicy, ulong storageCapacity, TimeSpan? pollingInterval = null)
+        public DiskCache(string directoryPath, ICachePolicy<TKey> cachePolicy, ulong storageCapacity, TimeSpan? pollingInterval = null, IEqualityComparer<TKey> keyComparer = null)
         {
             if (string.IsNullOrWhiteSpace(directoryPath))
                 throw new ArgumentNullException(nameof(directoryPath));
@@ -58,6 +61,10 @@ namespace SJP.DiskCache
             Policy = cachePolicy ?? throw new ArgumentNullException(nameof(cachePolicy));
             MaximumStorageCapacity = storageCapacity;
             PollingInterval = interval;
+            KeyComparer = keyComparer ?? EqualityComparer<TKey>.Default;
+
+            _entryLookup = new ConcurrentDictionary<TKey, ICacheEntry<TKey>>(KeyComparer);
+            _fileLookup = new ConcurrentDictionary<TKey, string>(KeyComparer);
 
             Clear();
 
@@ -82,9 +89,14 @@ namespace SJP.DiskCache
         public TimeSpan PollingInterval { get; }
 
         /// <summary>
+        /// The <see cref="IEqualityComparer{TKey}"/> implementation to use when comparing cache keys.
+        /// </summary>
+        protected IEqualityComparer<TKey> KeyComparer { get; }
+
+        /// <summary>
         /// The cache eviction policy that evaluates which entries should be removed from the cache.
         /// </summary>
-        public ICachePolicy Policy { get; }
+        public ICachePolicy<TKey> Policy { get; }
 
         /// <summary>
         /// The directory that is storing the cache.
@@ -94,17 +106,17 @@ namespace SJP.DiskCache
         /// <summary>
         /// Occurs when an entry has been added to the cache.
         /// </summary>
-        public event EventHandler<ICacheEntry> EntryAdded;
+        public event EventHandler<ICacheEntry<TKey>> EntryAdded;
 
         /// <summary>
         /// Occurs when an entry has been updated in the cache.
         /// </summary>
-        public event EventHandler<ICacheEntry> EntryUpdated;
+        public event EventHandler<ICacheEntry<TKey>> EntryUpdated;
 
         /// <summary>
         /// Occurs when an entry has been removed or evicted from the cache.
         /// </summary>
-        public event EventHandler<ICacheEntry> EntryRemoved;
+        public event EventHandler<ICacheEntry<TKey>> EntryRemoved;
 
         /// <summary>
         /// Empties the cache of all values that it is currently tracking.
@@ -129,28 +141,28 @@ namespace SJP.DiskCache
         }
 
         /// <summary>
-        /// Determines whether the <see cref="IDiskCache" /> contains the specified key.
+        /// Determines whether the <see cref="DiskCache{TKey}" /> contains the specified key.
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns><c>true</c> if the cache contains the key; otherwise <c>false</c>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace.</exception>
-        public bool ContainsKey(string key)
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
+        public bool ContainsKey(TKey key)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
 
             return _entryLookup.ContainsKey(key);
         }
 
         /// <summary>
-        /// Asynchronously determines whether the <see cref="IDiskCache" /> contains the specified key.
+        /// Asynchronously determines whether the <see cref="DiskCache{TKey}" /> contains the specified key.
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns><c>true</c> if the cache contains the key; otherwise <c>false</c>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace.</exception>
-        public Task<bool> ContainsKeyAsync(string key)
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
+        public Task<bool> ContainsKeyAsync(TKey key)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
 
             return Task.Run(() => ContainsKey(key));
@@ -161,10 +173,10 @@ namespace SJP.DiskCache
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A stream of data from the cache.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace.</exception>
-        public Stream GetValue(string key)
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
+        public Stream GetValue(TKey key)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
 
             if (!_fileLookup.ContainsKey(key))
@@ -185,10 +197,10 @@ namespace SJP.DiskCache
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A stream of data from the cache.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace.</exception>
-        public Task<Stream> GetValueAsync(string key)
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
+        public Task<Stream> GetValueAsync(TKey key)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
 
             return Task.Run(() => GetValue(key));
@@ -199,11 +211,11 @@ namespace SJP.DiskCache
         /// </summary>
         /// <param name="key">The key used to locate the value in the cache.</param>
         /// <param name="value">A stream of data to store in the cache.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace. Can also be thrown when <paramref name="value"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c> or <paramref name="value"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentException"><paramref name="value"/> is not readable.</exception>
-        public void SetValue(string key, Stream value)
+        public void SetValue(TKey key, Stream value)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -270,7 +282,7 @@ namespace SJP.DiskCache
             var cacheFileInfo = new FileInfo(cachePath);
 
             _fileLookup[key] = cachePath;
-            var cacheEntry = new CacheEntry(key, Convert.ToUInt64(cacheFileInfo.Length));
+            var cacheEntry = new CacheEntry<TKey>(key, Convert.ToUInt64(cacheFileInfo.Length));
             _entryLookup[key] = cacheEntry;
 
             if (isNew)
@@ -287,11 +299,11 @@ namespace SJP.DiskCache
         /// <param name="key">The key used to locate the value in the cache.</param>
         /// <param name="value">A stream of data to store in the cache.</param>
         /// <returns><c>true</c> if the data was able to be stored without error; otherwise <c>false</c>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>, empty or whitespace. Can also be thrown when <paramref name="value"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c> or <paramref name="value"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentException"><paramref name="value"/> is not readable.</exception>
-        public bool TrySetValue(string key, Stream value)
+        public bool TrySetValue(TKey key, Stream value)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -358,7 +370,7 @@ namespace SJP.DiskCache
             var cacheFileInfo = new FileInfo(cachePath);
 
             _fileLookup[key] = cachePath;
-            var cacheEntry = new CacheEntry(key, Convert.ToUInt64(cacheFileInfo.Length));
+            var cacheEntry = new CacheEntry<TKey>(key, Convert.ToUInt64(cacheFileInfo.Length));
             _entryLookup[key] = cacheEntry;
 
             if (isNew)
@@ -375,9 +387,10 @@ namespace SJP.DiskCache
         /// </summary>
         /// <param name="key">The key used to locate the value in the cache.</param>
         /// <param name="value">A stream of data to store in the cache.</param>
-        public async Task SetValueAsync(string key, Stream value)
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c> or <paramref name="value"/> is <c>null</c>.</exception>
+        public async Task SetValueAsync(TKey key, Stream value)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -444,7 +457,7 @@ namespace SJP.DiskCache
             var cacheFileInfo = new FileInfo(cachePath);
 
             _fileLookup[key] = cachePath;
-            var cacheEntry = new CacheEntry(key, Convert.ToUInt64(cacheFileInfo.Length));
+            var cacheEntry = new CacheEntry<TKey>(key, Convert.ToUInt64(cacheFileInfo.Length));
             _entryLookup[key] = cacheEntry;
 
             if (isNew)
@@ -461,9 +474,10 @@ namespace SJP.DiskCache
         /// <param name="key">The key used to locate the value in the cache.</param>
         /// <param name="value">A stream of data to store in the cache.</param>
         /// <returns><c>true</c> if the data was able to be stored without error; otherwise <c>false</c>.</returns>
-        public async Task<bool> TrySetValueAsync(string key, Stream value)
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c> or <paramref name="value"/> is <c>null</c>.</exception>
+        public async Task<bool> TrySetValueAsync(TKey key, Stream value)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
@@ -530,7 +544,7 @@ namespace SJP.DiskCache
             var cacheFileInfo = new FileInfo(cachePath);
 
             _fileLookup[key] = cachePath;
-            var cacheEntry = new CacheEntry(key, Convert.ToUInt64(cacheFileInfo.Length));
+            var cacheEntry = new CacheEntry<TKey>(key, Convert.ToUInt64(cacheFileInfo.Length));
             _entryLookup[key] = cacheEntry;
 
             if (isNew)
@@ -548,9 +562,10 @@ namespace SJP.DiskCache
         /// <param name="key">The key to locate in the cache.</param>
         /// <param name="stream">A stream of data from the cache. Will be <c>null</c> when <paramref name="key" /> does not exist in the cache.</param>
         /// <returns><c>true</c> if the cache contains the key; otherwise <c>false</c>.</returns>
-        public bool TryGetValue(string key, out Stream stream)
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
+        public bool TryGetValue(TKey key, out Stream stream)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
 
             var hasValue = ContainsKey(key);
@@ -564,9 +579,10 @@ namespace SJP.DiskCache
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A tuple of two values. A boolean determines whether <paramref name="key" /> is present in the cache. If <paramref name="key" /> is present, the <see cref="Stream" /> value will be provided, otherwise it will be <c>null</c>.</returns>
-        public (bool hasValue, Stream stream) TryGetValue(string key)
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
+        public (bool hasValue, Stream stream) TryGetValue(TKey key)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
 
             var hasValue = ContainsKey(key);
@@ -580,9 +596,10 @@ namespace SJP.DiskCache
         /// </summary>
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A tuple of two values. A boolean determines whether <paramref name="key" /> is present in the cache. If <paramref name="key" /> is present, the <see cref="Stream" /> value will be provided, otherwise it will be <c>null</c>.</returns>
-        public async Task<(bool hasValue, Stream stream)> TryGetValueAsync(string key)
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
+        public async Task<(bool hasValue, Stream stream)> TryGetValueAsync(TKey key)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
 
             var hasValue = await ContainsKeyAsync(key).ConfigureAwait(false);
@@ -637,6 +654,8 @@ namespace SJP.DiskCache
         /// </summary>
         /// <param name="hash">A hash of the contents of the cache.</param>
         /// <returns>A fully qualified path for a cached value.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="hash"/> is <c>null</c>, empty, or whitespace.</exception>
+        /// <exception cref="ArgumentException"><paramref name="hash"/> is not 64 characters long and does not contain only hexadecimal characters.</exception>
         protected virtual string GetPath(string hash)
         {
             if (string.IsNullOrWhiteSpace(hash))
@@ -660,12 +679,20 @@ namespace SJP.DiskCache
         /// <returns><c>true</c> if the value is a hexadecimal character; otherwise <c>false</c>.</returns>
         protected static bool IsValidHexChar(char c) => byte.TryParse(c.ToString(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var tmp);
 
+        /// <summary>
+        /// Determines whether a provided key value is <c>null</c>.
+        /// </summary>
+        /// <param name="key">A cache key value.</param>
+        /// <returns><c>true</c> if the key value is <c>null</c>; otherwise <c>false</c>.</returns>
+        protected static bool IsNull(TKey key) => !_isValueType && EqualityComparer<TKey>.Default.Equals(key, default(TKey));
+
         private bool _disposed;
 
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private readonly ConcurrentDictionary<string, ICacheEntry> _entryLookup = new ConcurrentDictionary<string, ICacheEntry>();
-        private readonly ConcurrentDictionary<string, string> _fileLookup = new ConcurrentDictionary<string, string>();
+        private readonly ConcurrentDictionary<TKey, ICacheEntry<TKey>> _entryLookup;
+        private readonly ConcurrentDictionary<TKey, string> _fileLookup;
 
         private readonly static TimeSpan _zero = new TimeSpan(0);
+        private readonly static bool _isValueType = typeof(TKey).IsValueType;
     }
 }

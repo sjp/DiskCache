@@ -5,12 +5,12 @@ namespace SJP.DiskCache.ConsoleTest
 {
     internal static class Program
     {
-        private static void Main(string[] args)
+        private static void Main()
         {
             var cacheDir = new DirectoryInfo(@"C:\Users\sjp\Downloads\tmp\cache");
-            var cachePolicy = new LruCachePolicy();
+            var cachePolicy = new LruCachePolicy<string>();
             const ulong maxSize = 1024L * 1024L * 1024L * 1024L; // 1GB
-            using (var diskCache = new DiskCache(cacheDir, cachePolicy, maxSize))
+            using (var diskCache = new DiskCache<string>(cacheDir, cachePolicy, maxSize))
             {
                 diskCache.EntryAdded += (s, e) => Console.WriteLine($"Added: { e.Key }, { e.Size }");
 

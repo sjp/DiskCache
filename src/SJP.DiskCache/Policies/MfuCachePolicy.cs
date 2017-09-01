@@ -8,7 +8,7 @@ namespace SJP.DiskCache
     /// Evicts values in a cache that are Most Frequently Used (MFU).
     /// </summary>
     /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
-    public class MfuCachePolicy<TKey> : ICachePolicy<TKey>
+    public class MfuCachePolicy<TKey> : ICachePolicy<TKey> where TKey : IEquatable<TKey>
     {
         /// <summary>
         /// Initializes a most frequently used cache policy.

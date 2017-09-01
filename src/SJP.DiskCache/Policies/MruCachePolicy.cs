@@ -8,7 +8,7 @@ namespace SJP.DiskCache
     /// Evicts values in a cache that are Most Recently Used (MRU).
     /// </summary>
     /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
-    public class MruCachePolicy<TKey> : ICachePolicy<TKey>
+    public class MruCachePolicy<TKey> : ICachePolicy<TKey> where TKey : IEquatable<TKey>
     {
         /// <summary>
         /// Initializes a most recently used cache policy.

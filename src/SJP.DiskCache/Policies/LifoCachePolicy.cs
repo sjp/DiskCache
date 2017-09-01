@@ -8,7 +8,7 @@ namespace SJP.DiskCache
     /// Evicts values in a cache that were introduced last. Last-In-First-Out (LIFO).
     /// </summary>
     /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
-    public class LifoCachePolicy<TKey> : ICachePolicy<TKey>
+    public class LifoCachePolicy<TKey> : ICachePolicy<TKey> where TKey : IEquatable<TKey>
     {
         /// <summary>
         /// Initializes a last-in-first-out cache policy.

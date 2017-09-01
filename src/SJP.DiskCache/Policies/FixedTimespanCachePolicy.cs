@@ -8,7 +8,7 @@ namespace SJP.DiskCache
     /// Evicts values in a cache that have been stored for a given time period.
     /// </summary>
     /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
-    public class FixedTimespanCachePolicy<TKey> : ICachePolicy<TKey>
+    public class FixedTimespanCachePolicy<TKey> : ICachePolicy<TKey> where TKey : IEquatable<TKey>
     {
         /// <summary>
         /// Initializes a fixed timespan cache policy.

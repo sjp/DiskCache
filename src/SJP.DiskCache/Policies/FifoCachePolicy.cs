@@ -8,7 +8,7 @@ namespace SJP.DiskCache
     /// Evicts values in a cache that were introduced first. First-In-First-Out (FIFO).
     /// </summary>
     /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
-    public class FifoCachePolicy<TKey> : ICachePolicy<TKey>
+    public class FifoCachePolicy<TKey> : ICachePolicy<TKey> where TKey : IEquatable<TKey>
     {
         /// <summary>
         /// Initializes a first-in-first-out cache policy.

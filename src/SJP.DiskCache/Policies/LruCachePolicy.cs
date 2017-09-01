@@ -8,7 +8,7 @@ namespace SJP.DiskCache
     /// Evicts values in a cache that are Least Recently Used (LRU).
     /// </summary>
     /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
-    public class LruCachePolicy<TKey> : ICachePolicy<TKey>
+    public class LruCachePolicy<TKey> : ICachePolicy<TKey> where TKey : IEquatable<TKey>
     {
         /// <summary>
         /// Initializes a least recently used cache policy.

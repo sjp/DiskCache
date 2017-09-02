@@ -13,7 +13,7 @@
     <PackageLicenseUrl>https://raw.github.com/sjp/DiskCache/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/sjp/DiskCache</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sjp/DiskCache</RepositoryUrl>
-    <!--<PackageIconUrl>https://raw.github.com/sjp/DiskCache/master/diskcache.svg</PackageIconUrl>-->
+    <PackageIconUrl>https://raw.github.com/sjp/DiskCache/master/diskcache.svg</PackageIconUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

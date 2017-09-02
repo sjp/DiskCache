@@ -8,7 +8,7 @@
     <Authors>Simon Potter</Authors>
     <Company />
     <Product />
-    <Description>Disk-based caching for large objects .NET</Description>
+    <Description>Disk-based caching for large objects in .NET</Description>
     <Copyright>Copyright © Simon Potter 2017</Copyright>
     <PackageLicenseUrl>https://raw.github.com/sjp/DiskCache/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/sjp/DiskCache</PackageProjectUrl>

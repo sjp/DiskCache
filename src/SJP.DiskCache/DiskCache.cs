@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 
+using SJP.Sherlock;
+
 namespace SJP.DiskCache
 {
     /// <summary>
@@ -123,11 +125,21 @@ namespace SJP.DiskCache
         /// </summary>
         public void Clear()
         {
-            foreach (var entry in _entryLookup)
+            while (!_entryLookup.IsEmpty)
             {
-                File.Delete(_fileLookup[entry.Key]);
-                _entryLookup.TryRemove(entry.Key, out var lookupEntry);
-                EntryRemoved?.Invoke(this, lookupEntry);
+                foreach (var entry in _entryLookup)
+                {
+                    var fileInfo = new FileInfo(_fileLookup[entry.Key]);
+                    if (fileInfo.IsFileLocked())
+                        continue;
+
+                    File.Delete(_fileLookup[entry.Key]);
+                    _entryLookup.TryRemove(entry.Key, out var lookupEntry);
+                    EntryRemoved?.Invoke(this, lookupEntry);
+                }
+
+                if (!_entryLookup.IsEmpty)
+                    Task.Delay(100).Wait();
             }
 
             foreach (var dir in CachePath.EnumerateDirectories())
@@ -178,9 +190,9 @@ namespace SJP.DiskCache
         {
             if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
-
-            if (!_fileLookup.ContainsKey(key))
+            if (!ContainsKey(key))
                 throw new KeyNotFoundException($"Could not find a value for the key '{ key }'");
+
             var path = _fileLookup[key];
             if (!File.Exists(path))
                 throw new FileNotFoundException($"Expected to find a path at the path '{ path }', but it does not exist.", path);
@@ -198,12 +210,16 @@ namespace SJP.DiskCache
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A stream of data from the cache.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
-        public Task<Stream> GetValueAsync(TKey key)
+        public async Task<Stream> GetValueAsync(TKey key)
         {
             if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
 
-            return Task.Run(() => GetValue(key));
+            var keyExists = await ContainsKeyAsync(key).ConfigureAwait(false);
+            if (!keyExists)
+                throw new KeyNotFoundException($"Could not find a value for the key '{ key }'");
+
+            return GetValue(key);
         }
 
         /// <summary>
@@ -642,7 +658,11 @@ namespace SJP.DiskCache
             {
                 var key = expiredEntry.Key;
                 var filePath = _fileLookup[key];
-                File.Delete(filePath);
+                var fileInfo = new FileInfo(filePath);
+                if (fileInfo.IsFileLocked())
+                    continue;
+
+                fileInfo.Delete();
                 _fileLookup.TryRemove(key, out var tmpFilePath);
                 _entryLookup.TryRemove(key, out var lookupEntry);
                 EntryRemoved?.Invoke(this, lookupEntry);

@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Moq;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SJP.DiskCache.Tests
 {
@@ -353,6 +354,636 @@ namespace SJP.DiskCache.Tests
                     Assert.IsFalse(result.hasValue);
                     Assert.IsNull(result.stream);
                 });
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void SetValue_WhenGivenNullKey_ThrowsArgNullException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.Throws<ArgumentNullException>(() => cache.SetValue(null, Stream.Null));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void SetValue_WhenGivenNullStream_ThrowsArgNullException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.Throws<ArgumentNullException>(() => cache.SetValue("asd", null));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void SetValue_WhenGivenUnreadableStream_ThrowsArgException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var stream = new Mock<Stream>();
+            stream.Setup(s => s.CanRead).Returns(false);
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.Throws<ArgumentException>(() => cache.SetValue("asd", stream.Object));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void TrySetValue_WhenGivenNullKey_ThrowsArgNullException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.Throws<ArgumentNullException>(() => cache.TrySetValue(null, Stream.Null));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void TrySetValue_WhenGivenNullStream_ThrowsArgNullException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.Throws<ArgumentNullException>(() => cache.TrySetValue("asd", null));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void TrySetValue_WhenGivenUnreadableStream_ThrowsArgException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var stream = new Mock<Stream>();
+            stream.Setup(s => s.CanRead).Returns(false);
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.Throws<ArgumentException>(() => cache.TrySetValue("asd", stream.Object));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void SetValueAsync_WhenGivenNullKey_ThrowsArgNullException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.SetValueAsync(null, Stream.Null).ConfigureAwait(false));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void SetValueAsync_WhenGivenNullStream_ThrowsArgNullException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.SetValueAsync("asd", null).ConfigureAwait(false));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void SetValueAsync_WhenGivenUnreadableStream_ThrowsArgException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var stream = new Mock<Stream>();
+            stream.Setup(s => s.CanRead).Returns(false);
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.ThrowsAsync<ArgumentException>(async () => await cache.SetValueAsync("asd", stream.Object).ConfigureAwait(false));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void TrySetValueAsync_WhenGivenNullKey_ThrowsArgNullException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.TrySetValueAsync(null, Stream.Null).ConfigureAwait(false));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void TrySetValueAsync_WhenGivenNullStream_ThrowsArgNullException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.ThrowsAsync<ArgumentNullException>(async () => await cache.TrySetValueAsync("asd", null).ConfigureAwait(false));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void TrySetValueAsync_WhenGivenUnreadableStream_ThrowsArgException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var stream = new Mock<Stream>();
+            stream.Setup(s => s.CanRead).Returns(false);
+            const ulong size = 123;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.ThrowsAsync<ArgumentException>(async () => await cache.TrySetValueAsync("asd", stream.Object).ConfigureAwait(false));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void SetValue_WhenGivenValueTooLarge_ThrowsArgException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 2;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.Throws<ArgumentException>(() => cache.SetValue("asd", new MemoryStream(new byte[4])));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void TrySetValue_WhenGivenValueTooLarge_ThrowsArgException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 2;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                var result = cache.TrySetValue("asd", new MemoryStream(new byte[4]));
+                Assert.IsFalse(result);
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void SetValueAsync_WhenGivenValueTooLarge_ThrowsArgException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 2;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                Assert.ThrowsAsync<ArgumentException>(async () => await cache.SetValueAsync("asd", new MemoryStream(new byte[4])).ConfigureAwait(false));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public async Task TrySetValueAsync_WhenGivenValueTooLarge_ThrowsArgException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            const ulong size = 2;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                var result = await cache.TrySetValueAsync("asd", new MemoryStream(new byte[4])).ConfigureAwait(false);
+                Assert.IsFalse(result);
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void GetSetValue_WhenInvokedTogether_HasEqualInputAndOutput()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "getsetvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                cache.SetValue("asd", new MemoryStream(input));
+                var result = cache.GetValue("asd");
+                using (var reader = new BinaryReader(result))
+                {
+                    var resultBytes = reader.ReadBytes(4);
+                    var seqEqual = input.SequenceEqual(resultBytes);
+                    Assert.IsTrue(seqEqual);
+                }
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void TryGetSetValue_WhenInvokedTogether_ReturnsTrueAndHasEqualInputAndOutput()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetsetvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                var setSuccess = cache.TrySetValue("asd", new MemoryStream(input));
+                var getSuccess = cache.TryGetValue("asd", out var result);
+
+                using (var reader = new BinaryReader(result))
+                {
+                    var resultBytes = reader.ReadBytes(4);
+                    var seqEqual = input.SequenceEqual(resultBytes);
+                    Assert.IsTrue(seqEqual);
+                }
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public async Task GetSetValueAsync_WhenInvokedTogether_HasEqualInputAndOutput()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "getsetvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                await cache.SetValueAsync("asd", new MemoryStream(input)).ConfigureAwait(false);
+                var result = await cache.GetValueAsync("asd").ConfigureAwait(false);
+                using (var reader = new BinaryReader(result))
+                {
+                    var resultBytes = reader.ReadBytes(4);
+                    var seqEqual = input.SequenceEqual(resultBytes);
+                    Assert.IsTrue(seqEqual);
+                }
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public async Task TryGetSetValueAsync_WhenInvokedTogether_ReturnsTrueAndHasEqualInputAndOutput()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetsetvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                var setSuccess = await cache.TrySetValueAsync("asd", new MemoryStream(input)).ConfigureAwait(false);
+                var getResult = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
+
+                using (var reader = new BinaryReader(getResult.stream))
+                {
+                    var resultBytes = reader.ReadBytes(4);
+                    var seqEqual = input.SequenceEqual(resultBytes);
+                    Assert.IsTrue(seqEqual);
+                }
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void GetSetValue_WhenInvokedTogetherUpdatingValue_HasEqualInputAndOutput()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "getsetvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var input = new byte[] { 1, 2, 3, 4 };
+            var updatedInput = new byte[] { 3, 4, 5, 6 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                cache.SetValue("asd", new MemoryStream(input));
+                cache.SetValue("asd", new MemoryStream(updatedInput));
+
+                var result = cache.GetValue("asd");
+                using (var reader = new BinaryReader(result))
+                {
+                    var resultBytes = reader.ReadBytes(4);
+                    var seqEqual = updatedInput.SequenceEqual(resultBytes);
+                    Assert.IsTrue(seqEqual);
+                }
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void TryGetSetValue_WhenInvokedTogetherUpdatingValue_ReturnsTrueAndHasEqualInputAndOutput()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetsetvalue_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var input = new byte[] { 1, 2, 3, 4 };
+            var updatedInput = new byte[] { 3, 4, 5, 6 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                var setSuccess = cache.TrySetValue("asd", new MemoryStream(input));
+                setSuccess = cache.TrySetValue("asd", new MemoryStream(updatedInput));
+                var getSuccess = cache.TryGetValue("asd", out var result);
+
+                using (var reader = new BinaryReader(result))
+                {
+                    var resultBytes = reader.ReadBytes(4);
+                    var seqEqual = updatedInput.SequenceEqual(resultBytes);
+                    Assert.IsTrue(seqEqual);
+                }
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public async Task GetSetValueAsync_WhenInvokedTogetherUpdatingValue_HasEqualInputAndOutput()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "getsetvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var input = new byte[] { 1, 2, 3, 4 };
+            var updatedInput = new byte[] { 3, 4, 5, 6 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                await cache.SetValueAsync("asd", new MemoryStream(input)).ConfigureAwait(false);
+                await cache.SetValueAsync("asd", new MemoryStream(updatedInput)).ConfigureAwait(false);
+                var result = await cache.GetValueAsync("asd").ConfigureAwait(false);
+                using (var reader = new BinaryReader(result))
+                {
+                    var resultBytes = reader.ReadBytes(4);
+                    var seqEqual = updatedInput.SequenceEqual(resultBytes);
+                    Assert.IsTrue(seqEqual);
+                }
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public async Task TryGetSetValueAsync_WhenInvokedTogetherUpdatingValue_ReturnsTrueAndHasEqualInputAndOutput()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetsetvalueasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = Mock.Of<ICachePolicy<string>>();
+            var input = new byte[] { 1, 2, 3, 4 };
+            var updatedInput = new byte[] { 3, 4, 5, 6 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                var setSuccess = await cache.TrySetValueAsync("asd", new MemoryStream(input)).ConfigureAwait(false);
+                setSuccess = await cache.TrySetValueAsync("asd", new MemoryStream(updatedInput)).ConfigureAwait(false);
+                var getResult = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
+
+                using (var reader = new BinaryReader(getResult.stream))
+                {
+                    var resultBytes = reader.ReadBytes(4);
+                    var seqEqual = updatedInput.SequenceEqual(resultBytes);
+                    Assert.IsTrue(seqEqual);
+                }
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void ContainsKey_WhenValueExpired_ReturnsFalse()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "containskey_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = new FixedTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(1));
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size, TimeSpan.FromMilliseconds(5)))
+            {
+                cache.SetValue("asd", new MemoryStream(input));
+                Task.Delay(100).Wait();
+                Assert.IsFalse(cache.ContainsKey("asd"));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void GetValue_WhenValueExpired_ThrowsKeyNotFoundException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalueexpired_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = new FixedTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(1));
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size, TimeSpan.FromMilliseconds(5)))
+            {
+                cache.SetValue("asd", new MemoryStream(input));
+                Task.Delay(100).Wait();
+                Assert.Throws<KeyNotFoundException>(() => cache.GetValue("asd"));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void TryGetValue_WhenValueExpired_ReturnsFalseAndNullStream()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalueexpired_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = new FixedTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(1));
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size, TimeSpan.FromMilliseconds(5)))
+            {
+                cache.SetValue("asd", new MemoryStream(input));
+                Task.Delay(100).Wait();
+                var result = cache.TryGetValue("asd", out var stream);
+
+                Assert.IsFalse(result);
+                Assert.IsNull(stream);
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void GetValueAsync_WhenValueExpired_ThrowsKeyNotFoundException()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalueexpired_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = new FixedTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(1));
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size, TimeSpan.FromMilliseconds(5)))
+            {
+                cache.SetValue("asd", new MemoryStream(input));
+                Task.Delay(100).Wait();
+                Assert.ThrowsAsync<KeyNotFoundException>(async () => await cache.GetValueAsync("asd").ConfigureAwait(false));
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public async Task TryGetValueAsync_WhenValueExpired_ReturnsFalseAndNullStream()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalueexpired_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = new FixedTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(1));
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size, TimeSpan.FromMilliseconds(5)))
+            {
+                cache.SetValue("asd", new MemoryStream(input));
+                Task.Delay(100).Wait();
+                var result = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
+
+                Assert.IsFalse(result.hasValue);
+                Assert.IsNull(result.stream);
             }
 
             testDir.Delete(true);

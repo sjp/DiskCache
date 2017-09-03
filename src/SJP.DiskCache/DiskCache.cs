@@ -16,7 +16,7 @@ namespace SJP.DiskCache
     /// A disk-based caching store.
     /// </summary>
     /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
-    public class DiskCache<TKey> : IDiskCache<TKey> where TKey : IEquatable<TKey>
+    public class DiskCache<TKey> : IDiskCache<TKey>, IDiskCacheAsync<TKey> where TKey : IEquatable<TKey>
     {
         /// <summary>
         /// Creates a disk-based caching store.
@@ -140,6 +140,38 @@ namespace SJP.DiskCache
 
                 if (!_entryLookup.IsEmpty)
                     Task.Delay(100).Wait();
+            }
+
+            foreach (var dir in CachePath.EnumerateDirectories())
+                dir.Delete(true);
+
+            foreach (var file in CachePath.EnumerateFiles())
+                file.Delete();
+
+            _entryLookup.Clear();
+            _fileLookup.Clear();
+        }
+
+        /// <summary>
+        /// Empties the cache of all values that it is currently tracking.
+        /// </summary>
+        public async Task ClearAsync()
+        {
+            while (!_entryLookup.IsEmpty)
+            {
+                foreach (var entry in _entryLookup)
+                {
+                    var fileInfo = new FileInfo(_fileLookup[entry.Key]);
+                    if (fileInfo.IsFileLocked())
+                        continue;
+
+                    File.Delete(_fileLookup[entry.Key]);
+                    _entryLookup.TryRemove(entry.Key, out var lookupEntry);
+                    EntryRemoved?.Invoke(this, lookupEntry);
+                }
+
+                if (!_entryLookup.IsEmpty)
+                    await Task.Delay(100).ConfigureAwait(false);
             }
 
             foreach (var dir in CachePath.EnumerateDirectories())

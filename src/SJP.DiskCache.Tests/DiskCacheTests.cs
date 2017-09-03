@@ -889,7 +889,7 @@ namespace SJP.DiskCache.Tests
             var cachePolicy = new FixedTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(1));
             var input = new byte[] { 1, 2, 3, 4 };
             const ulong size = 20;
-            using (var cache = new DiskCache<string>(testDir, cachePolicy, size, TimeSpan.FromMilliseconds(5)))
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size, TimeSpan.FromMilliseconds(20)))
             {
                 cache.SetValue("asd", new MemoryStream(input));
                 Task.Delay(100).Wait();
@@ -979,11 +979,57 @@ namespace SJP.DiskCache.Tests
             using (var cache = new DiskCache<string>(testDir, cachePolicy, size, TimeSpan.FromMilliseconds(5)))
             {
                 cache.SetValue("asd", new MemoryStream(input));
-                Task.Delay(100).Wait();
+                await Task.Delay(100).ConfigureAwait(false);
                 var result = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
 
                 Assert.IsFalse(result.hasValue);
                 Assert.IsNull(result.stream);
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public void Clear_WhenValuePresent_RemovesAnyPresentValues()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "clearasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = new FifoCachePolicy<string>();
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                cache.SetValue("asd", new MemoryStream(input));
+                cache.Clear();
+
+                var result = cache.ContainsKey("asd");
+                Assert.IsFalse(result);
+            }
+
+            testDir.Delete(true);
+        }
+
+        [Test]
+        public async Task ClearAsync_WhenValuePresent_RemovesAnyPresentValues()
+        {
+            var testDirPath = Path.Combine(Environment.CurrentDirectory, "clearasync_test");
+            var testDir = new DirectoryInfo(testDirPath);
+            if (!testDir.Exists)
+                testDir.Create();
+
+            var cachePolicy = new FifoCachePolicy<string>();
+            var input = new byte[] { 1, 2, 3, 4 };
+            const ulong size = 20;
+            using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
+            {
+                cache.SetValue("asd", new MemoryStream(input));
+                await cache.ClearAsync().ConfigureAwait(false);
+
+                var result = await cache.ContainsKeyAsync("asd").ConfigureAwait(false);
+                Assert.IsFalse(result);
             }
 
             testDir.Delete(true);

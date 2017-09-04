@@ -270,75 +270,12 @@ namespace SJP.DiskCache
             if (!value.CanRead)
                 throw new ArgumentException("The given stream is not readable.", nameof(value));
 
-            ulong totalBytesRead = 0;
-            const long bufferSize = 4096;
-
-            var tmpFileName = Path.Combine(CachePath.FullName, Guid.NewGuid().ToString());
-            string hash = null;
-
-            using (var shaHasher = new SHA256Managed())
+            var result = SetValueCore(key, value);
+            switch (result)
             {
-                using (var writer = File.OpenWrite(tmpFileName))
-                {
-                    byte[] oldBuffer;
-                    int oldBytesRead;
-
-                    var buffer = new byte[bufferSize];
-                    var bytesRead = value.Read(buffer, 0, buffer.Length);
-                    totalBytesRead += Convert.ToUInt32(bytesRead);
-
-                    do
-                    {
-                        oldBytesRead = bytesRead;
-                        oldBuffer = buffer;
-
-                        buffer = new byte[bufferSize];
-                        bytesRead = value.Read(buffer, 0, buffer.Length);
-                        totalBytesRead += Convert.ToUInt32(bytesRead);
-
-                        if (bytesRead == 0)
-                        {
-                            shaHasher.TransformFinalBlock(oldBuffer, 0, oldBytesRead);
-                            writer.Write(oldBuffer, 0, oldBytesRead);
-                        }
-                        else
-                        {
-                            shaHasher.TransformBlock(oldBuffer, 0, oldBytesRead, oldBuffer, 0);
-                            writer.Write(oldBuffer, 0, oldBytesRead);
-                        }
-                    }
-                    while (bytesRead != 0 && totalBytesRead <= MaximumStorageCapacity);
-                }
-
-                if (totalBytesRead > MaximumStorageCapacity)
-                {
-                    File.Delete(tmpFileName); // remove the file, we can't keep it anyway
+                case SetStatus.DataTooLarge:
                     throw new ArgumentException("The given stream received data that was larger than the allotted storage capacity of " + MaximumStorageCapacity.ToString(CultureInfo.InvariantCulture), nameof(value));
-                }
-
-                var shaHashBytes = shaHasher.Hash;
-                hash = BitConverter.ToString(shaHashBytes).Replace("-", string.Empty);
             }
-
-            var isNew = !ContainsKey(key);
-
-            var cachePath = GetPath(hash);
-            var cachePathDir = Path.GetDirectoryName(cachePath);
-            if (!Directory.Exists(cachePathDir))
-                Directory.CreateDirectory(cachePathDir);
-            File.Move(tmpFileName, cachePath);
-            var cacheFileInfo = new FileInfo(cachePath);
-
-            _fileLookup[key] = cachePath;
-            var cacheEntry = new CacheEntry<TKey>(key, Convert.ToUInt64(cacheFileInfo.Length));
-            _entryLookup[key] = cacheEntry;
-
-            if (isNew)
-                EntryAdded?.Invoke(this, cacheEntry);
-            else
-                EntryUpdated?.Invoke(this, cacheEntry);
-
-            ApplyCachePolicy();
         }
 
         /// <summary>
@@ -358,6 +295,26 @@ namespace SJP.DiskCache
             if (!value.CanRead)
                 throw new ArgumentException("The given stream is not readable.", nameof(value));
 
+            return SetValueCore(key, value) == SetStatus.Success;
+        }
+
+        /// <summary>
+        /// Stores a value associated with a key. Returns a status on whether the operation completed and how it failed if not.
+        /// </summary>
+        /// <param name="key">The key used to locate the value in the cache.</param>
+        /// <param name="value">A stream of data to store in the cache.</param>
+        /// <returns>A <see cref="SetStatus"/> value on whether the operation completed and how it failed if not.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c> or <paramref name="value"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="value"/> is not readable.</exception>
+        protected SetStatus SetValueCore(TKey key, Stream value)
+        {
+            if (IsNull(key))
+                throw new ArgumentNullException(nameof(key));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (!value.CanRead)
+                throw new ArgumentException("The given stream is not readable.", nameof(value));
+
             ulong totalBytesRead = 0;
             const long bufferSize = 4096;
 
@@ -401,7 +358,7 @@ namespace SJP.DiskCache
                 if (totalBytesRead > MaximumStorageCapacity)
                 {
                     File.Delete(tmpFileName); // remove the file, we can't keep it anyway
-                    return false;
+                    return SetStatus.DataTooLarge;
                 }
 
                 var shaHashBytes = shaHasher.Hash;
@@ -427,7 +384,7 @@ namespace SJP.DiskCache
                 EntryUpdated?.Invoke(this, cacheEntry);
 
             ApplyCachePolicy();
-            return true;
+            return SetStatus.Success;
         }
 
         /// <summary>
@@ -445,75 +402,12 @@ namespace SJP.DiskCache
             if (!value.CanRead)
                 throw new ArgumentException("The given stream is not readable.", nameof(value));
 
-            ulong totalBytesRead = 0;
-            const long bufferSize = 4096;
-
-            var tmpFileName = Path.Combine(CachePath.FullName, Guid.NewGuid().ToString());
-            string hash = null;
-
-            using (var shaHasher = new SHA256Managed())
+            var result = await SetValueCoreAsync(key, value).ConfigureAwait(false);
+            switch (result)
             {
-                using (var writer = File.OpenWrite(tmpFileName))
-                {
-                    byte[] oldBuffer;
-                    int oldBytesRead;
-
-                    var buffer = new byte[bufferSize];
-                    var bytesRead = await value.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                    totalBytesRead += Convert.ToUInt32(bytesRead);
-
-                    do
-                    {
-                        oldBytesRead = bytesRead;
-                        oldBuffer = buffer;
-
-                        buffer = new byte[bufferSize];
-                        bytesRead = await value.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                        totalBytesRead += Convert.ToUInt32(bytesRead);
-
-                        if (bytesRead == 0)
-                        {
-                            shaHasher.TransformFinalBlock(oldBuffer, 0, oldBytesRead);
-                            await writer.WriteAsync(oldBuffer, 0, oldBytesRead).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            shaHasher.TransformBlock(oldBuffer, 0, oldBytesRead, oldBuffer, 0);
-                            await writer.WriteAsync(oldBuffer, 0, oldBytesRead).ConfigureAwait(false);
-                        }
-                    }
-                    while (bytesRead != 0 && totalBytesRead <= MaximumStorageCapacity);
-                }
-
-                if (totalBytesRead > MaximumStorageCapacity)
-                {
-                    File.Delete(tmpFileName); // remove the file, we can't keep it anyway
+                case SetStatus.DataTooLarge:
                     throw new ArgumentException("The given stream received data that was larger than the allotted storage capacity of " + MaximumStorageCapacity.ToString(CultureInfo.InvariantCulture), nameof(value));
-                }
-
-                var shaHashBytes = shaHasher.Hash;
-                hash = BitConverter.ToString(shaHashBytes).Replace("-", string.Empty);
             }
-
-            var isNew = !ContainsKey(key);
-
-            var cachePath = GetPath(hash);
-            var cachePathDir = Path.GetDirectoryName(cachePath);
-            if (!Directory.Exists(cachePathDir))
-                Directory.CreateDirectory(cachePathDir);
-            File.Move(tmpFileName, cachePath);
-            var cacheFileInfo = new FileInfo(cachePath);
-
-            _fileLookup[key] = cachePath;
-            var cacheEntry = new CacheEntry<TKey>(key, Convert.ToUInt64(cacheFileInfo.Length));
-            _entryLookup[key] = cacheEntry;
-
-            if (isNew)
-                EntryAdded?.Invoke(this, cacheEntry);
-            else
-                EntryUpdated?.Invoke(this, cacheEntry);
-
-            ApplyCachePolicy();
         }
 
         /// <summary>
@@ -532,6 +426,27 @@ namespace SJP.DiskCache
             if (!value.CanRead)
                 throw new ArgumentException("The given stream is not readable.", nameof(value));
 
+            var result = await SetValueCoreAsync(key, value).ConfigureAwait(false);
+            return result == SetStatus.Success;
+        }
+
+        /// <summary>
+        /// Asynchronously stores a value associated with a key. Returns a status on whether the operation completed and how it failed if not.
+        /// </summary>
+        /// <param name="key">The key used to locate the value in the cache.</param>
+        /// <param name="value">A stream of data to store in the cache.</param>
+        /// <returns>A <see cref="SetStatus"/> value on whether the operation completed and how it failed if not.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c> or <paramref name="value"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="value"/> is not readable.</exception>
+        protected async Task<SetStatus> SetValueCoreAsync(TKey key, Stream value)
+        {
+            if (IsNull(key))
+                throw new ArgumentNullException(nameof(key));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (!value.CanRead)
+                throw new ArgumentException("The given stream is not readable.", nameof(value));
+
             ulong totalBytesRead = 0;
             const long bufferSize = 4096;
 
@@ -575,7 +490,7 @@ namespace SJP.DiskCache
                 if (totalBytesRead > MaximumStorageCapacity)
                 {
                     File.Delete(tmpFileName); // remove the file, we can't keep it anyway
-                    return false;
+                    return SetStatus.DataTooLarge;
                 }
 
                 var shaHashBytes = shaHasher.Hash;
@@ -601,7 +516,7 @@ namespace SJP.DiskCache
                 EntryUpdated?.Invoke(this, cacheEntry);
 
             ApplyCachePolicy();
-            return true;
+            return SetStatus.Success;
         }
 
         /// <summary>
@@ -746,5 +661,29 @@ namespace SJP.DiskCache
 
         private readonly static TimeSpan _zero = new TimeSpan(0);
         private readonly static bool _isValueType = typeof(TKey).IsValueType;
+
+        /// <summary>
+        /// Contains values used to determine how the get operation completed.
+        /// </summary>
+        protected enum GetStatus
+        {
+
+        }
+
+        /// <summary>
+        /// Contains values used to determine how the set operation completed.
+        /// </summary>
+        protected enum SetStatus
+        {
+            /// <summary>
+            /// The set operation completed successfully.
+            /// </summary>
+            Success,
+
+            /// <summary>
+            /// The set operation failed because the data passed into the cache was too large.
+            /// </summary>
+            DataTooLarge
+        }
     }
 }

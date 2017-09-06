@@ -20,8 +20,6 @@ Enables caching of large objects in memory-constrained environments. Data can be
 
 ## Installation
 
-**NOTE:** This project is still a work in progress. However, once ready, it will be available by the following methods.
-
 ```powershell
 Install-Package SJP.DiskCache
 ```

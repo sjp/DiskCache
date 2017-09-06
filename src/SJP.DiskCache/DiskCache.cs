@@ -663,14 +663,6 @@ namespace SJP.DiskCache
         private readonly static bool _isValueType = typeof(TKey).IsValueType;
 
         /// <summary>
-        /// Contains values used to determine how the get operation completed.
-        /// </summary>
-        protected enum GetStatus
-        {
-
-        }
-
-        /// <summary>
         /// Contains values used to determine how the set operation completed.
         /// </summary>
         protected enum SetStatus

@@ -497,7 +497,7 @@ namespace SJP.DiskCache
                 hash = BitConverter.ToString(shaHashBytes).Replace("-", string.Empty);
             }
 
-            var isNew = !ContainsKey(key);
+            var isNew = !await ContainsKeyAsync(key).ConfigureAwait(false);
 
             var cachePath = GetPath(hash);
             var cachePathDir = Path.GetDirectoryName(cachePath);

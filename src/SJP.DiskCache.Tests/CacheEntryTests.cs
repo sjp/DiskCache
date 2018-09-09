@@ -5,22 +5,22 @@ using NUnit.Framework;
 namespace SJP.DiskCache.Tests
 {
     [TestFixture]
-    public class CacheEntryTests
+    internal static class CacheEntryTests
     {
         [Test]
-        public void Ctor_GivenNullString_ThrowsArgNullException()
+        public static void Ctor_GivenNullString_ThrowsArgNullException()
         {
             Assert.Throws<ArgumentNullException>(() => new CacheEntry<string>(null, 123));
         }
 
         [Test]
-        public void Ctor_GivenZeroSize_ThrowsArgException()
+        public static void Ctor_GivenZeroSize_ThrowsArgException()
         {
             Assert.Throws<ArgumentException>(() => new CacheEntry<string>("test", 0));
         }
 
         [Test]
-        public void Key_OnObjectCreate_SetToCtorArg()
+        public static void Key_OnObjectCreate_SetToCtorArg()
         {
             const string expected = "test";
             var entry = new CacheEntry<string>(expected, 123);
@@ -29,7 +29,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void Size_OnObjectCreate_SetToCtorArg()
+        public static void Size_OnObjectCreate_SetToCtorArg()
         {
             const ulong expected = 123;
             var entry = new CacheEntry<string>("test", expected);
@@ -38,7 +38,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void LastAccessed_OnObjectCreate_InitializedToCreationTime()
+        public static void LastAccessed_OnObjectCreate_InitializedToCreationTime()
         {
             var entry = new CacheEntry<string>("test", 123);
 
@@ -50,7 +50,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void AccessCount_WhenAccessed_IsIncremented()
+        public static void AccessCount_WhenAccessed_IsIncremented()
         {
             var entry = new CacheEntry<string>("test", 123);
             Assert.AreEqual(0, entry.AccessCount);
@@ -65,7 +65,7 @@ namespace SJP.DiskCache.Tests
         // uncomment on local, appears to fail on CI
         /*
         [Test]
-        public async Task LastAccessed_OnPropertyGet_IncreasesOverTime()
+        public static async Task LastAccessed_OnPropertyGet_IncreasesOverTime()
         {
             var entry = new CacheEntry("test", 123);
 
@@ -78,7 +78,7 @@ namespace SJP.DiskCache.Tests
         */
 
         [Test]
-        public async Task Refresh_WhenInvoked_ResetsLastAccessed()
+        public static async Task Refresh_WhenInvoked_ResetsLastAccessed()
         {
             var entry = new CacheEntry<string>("test", 123);
 

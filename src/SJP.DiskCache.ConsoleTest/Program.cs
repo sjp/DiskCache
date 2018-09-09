@@ -12,7 +12,7 @@ namespace SJP.DiskCache.ConsoleTest
             const ulong maxSize = 1024L * 1024L * 1024L * 1024L; // 1GB
             using (var diskCache = new DiskCache<string>(cacheDir, cachePolicy, maxSize))
             {
-                diskCache.EntryAdded += (s, e) => Console.WriteLine($"Added: { e.Key }, { e.Size }");
+                diskCache.EntryAdded += (_, e) => Console.WriteLine($"Added: { e.Key }, { e.Size }");
 
                 using (var flacStream = File.OpenRead(@"C:\Users\sjp\Downloads\05. End Of Days.flac"))
                     diskCache.SetValue("flacFile", flacStream);

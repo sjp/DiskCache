@@ -9,24 +9,24 @@ using System.Linq;
 namespace SJP.DiskCache.Tests
 {
     [TestFixture]
-    public class DiskCacheTests
+    internal static class DiskCacheTests
     {
         [Test]
-        public void Ctor_GivenNullDirectory_ThrowsArgNullException()
+        public static void Ctor_GivenNullDirectory_ThrowsArgNullException()
         {
             var cachePolicy = Mock.Of<ICachePolicy<string>>();
             Assert.Throws<ArgumentNullException>(() => new DiskCache<string>((DirectoryInfo)null, cachePolicy, 123));
         }
 
         [Test]
-        public void Ctor_GivenNullCachePolicy_ThrowsArgNullException()
+        public static void Ctor_GivenNullCachePolicy_ThrowsArgNullException()
         {
             var dir = new DirectoryInfo(Environment.CurrentDirectory);
             Assert.Throws<ArgumentNullException>(() => new DiskCache<string>(dir, null, 123));
         }
 
         [Test]
-        public void Ctor_GivenZeroStorageCapacity_ThrowsArgOutOfRangeException()
+        public static void Ctor_GivenZeroStorageCapacity_ThrowsArgOutOfRangeException()
         {
             var dir = new DirectoryInfo(Environment.CurrentDirectory);
             var cachePolicy = Mock.Of<ICachePolicy<string>>();
@@ -35,7 +35,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void Ctor_GivenNegativeInterval_ThrowsArgOutOfRangeException()
+        public static void Ctor_GivenNegativeInterval_ThrowsArgOutOfRangeException()
         {
             var dir = new DirectoryInfo(Environment.CurrentDirectory);
             var cachePolicy = Mock.Of<ICachePolicy<string>>();
@@ -45,7 +45,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void Ctor_GivenZeroInterval_ThrowsArgOutOfRangeException()
+        public static void Ctor_GivenZeroInterval_ThrowsArgOutOfRangeException()
         {
             var dir = new DirectoryInfo(Environment.CurrentDirectory);
             var cachePolicy = Mock.Of<ICachePolicy<string>>();
@@ -55,7 +55,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void Ctor_GivenNullDirectoryPath_ThrowsArgNullException()
+        public static void Ctor_GivenNullDirectoryPath_ThrowsArgNullException()
         {
             var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
@@ -64,7 +64,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void Ctor_GivenEmptyDirectoryPath_ThrowsArgNullException()
+        public static void Ctor_GivenEmptyDirectoryPath_ThrowsArgNullException()
         {
             var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
@@ -73,7 +73,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void Ctor_GivenWhiteSpaceDirectoryPath_ThrowsArgNullException()
+        public static void Ctor_GivenWhiteSpaceDirectoryPath_ThrowsArgNullException()
         {
             var cachePolicy = Mock.Of<ICachePolicy<string>>();
             const ulong size = 123;
@@ -82,7 +82,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void Ctor_GivenNonExistentDirectory_ThrowsDirNotFoundException()
+        public static void Ctor_GivenNonExistentDirectory_ThrowsDirNotFoundException()
         {
             var dir = Path.Combine(Environment.CurrentDirectory, "asdasdasd");
             var cachePolicy = Mock.Of<ICachePolicy<string>>();
@@ -92,7 +92,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void ContainsKey_GivenNullKey_ThrowsArgNullException()
+        public static void ContainsKey_GivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "containskey_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -110,7 +110,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void ContainsKeyAsync_GivenNullKey_ThrowsArgNullException()
+        public static void ContainsKeyAsync_GivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "containskeyasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -128,7 +128,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetValue_GivenNullKey_ThrowsArgNullException()
+        public static void GetValue_GivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -146,7 +146,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetValueAsync_GivenNullKey_ThrowsArgNullException()
+        public static void GetValueAsync_GivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -164,7 +164,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TryGetValue_GivenNullKey_ThrowsArgNullException()
+        public static void TryGetValue_GivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalue_out_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -182,7 +182,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TryGetValueTuple_GivenNullKey_ThrowsArgNullException()
+        public static void TryGetValueTuple_GivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalue_tuple_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -200,7 +200,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TryGetValueAsyncTuple_GivenNullKey_ThrowsArgNullException()
+        public static void TryGetValueAsyncTuple_GivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalueasync_tuple_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -218,7 +218,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void ContainsKey_WhenEmpty_ReturnsFalse()
+        public static void ContainsKey_WhenEmpty_ReturnsFalse()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "containskey_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -236,7 +236,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public async Task ContainsKeyAsync_WhenEmpty_ReturnsFalse()
+        public static async Task ContainsKeyAsync_WhenEmpty_ReturnsFalse()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "containskeyasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -255,7 +255,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetValue_WhenEmpty_ThrowsKeyNotFoundEx()
+        public static void GetValue_WhenEmpty_ThrowsKeyNotFoundEx()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -273,7 +273,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetValueAsync_WhenEmpty_ThrowsKeyNotFoundEx()
+        public static void GetValueAsync_WhenEmpty_ThrowsKeyNotFoundEx()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -291,7 +291,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TryGetValue_WhenEmpty_ReturnsFalseValueOutNull()
+        public static void TryGetValue_WhenEmpty_ReturnsFalseValueOutNull()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalue_out_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -314,7 +314,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TryGetValue_WhenEmpty_ReturnsFalseValueNullStreamTuple()
+        public static void TryGetValue_WhenEmpty_ReturnsFalseValueNullStreamTuple()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalue_tuple_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -325,11 +325,11 @@ namespace SJP.DiskCache.Tests
             const ulong size = 123;
             using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
-                var result = cache.TryGetValue("asd");
+                var (hasValue, stream) = cache.TryGetValue("asd");
                 Assert.Multiple(() =>
                 {
-                    Assert.IsFalse(result.hasValue);
-                    Assert.IsNull(result.stream);
+                    Assert.IsFalse(hasValue);
+                    Assert.IsNull(stream);
                 });
             }
 
@@ -337,7 +337,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public async Task TryGetValueAsync_WhenEmpty_ReturnsFalseValueNullStreamTuple()
+        public static async Task TryGetValueAsync_WhenEmpty_ReturnsFalseValueNullStreamTuple()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalueasync_tuple_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -348,11 +348,11 @@ namespace SJP.DiskCache.Tests
             const ulong size = 123;
             using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
-                var result = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
+                var (hasValue, stream) = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
                 Assert.Multiple(() =>
                 {
-                    Assert.IsFalse(result.hasValue);
-                    Assert.IsNull(result.stream);
+                    Assert.IsFalse(hasValue);
+                    Assert.IsNull(stream);
                 });
             }
 
@@ -360,7 +360,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void SetValue_WhenGivenNullKey_ThrowsArgNullException()
+        public static void SetValue_WhenGivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -378,7 +378,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void SetValue_WhenGivenNullStream_ThrowsArgNullException()
+        public static void SetValue_WhenGivenNullStream_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -396,7 +396,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void SetValue_WhenGivenUnreadableStream_ThrowsArgException()
+        public static void SetValue_WhenGivenUnreadableStream_ThrowsArgException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -416,7 +416,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TrySetValue_WhenGivenNullKey_ThrowsArgNullException()
+        public static void TrySetValue_WhenGivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -434,7 +434,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TrySetValue_WhenGivenNullStream_ThrowsArgNullException()
+        public static void TrySetValue_WhenGivenNullStream_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -452,7 +452,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TrySetValue_WhenGivenUnreadableStream_ThrowsArgException()
+        public static void TrySetValue_WhenGivenUnreadableStream_ThrowsArgException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -472,7 +472,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void SetValueAsync_WhenGivenNullKey_ThrowsArgNullException()
+        public static void SetValueAsync_WhenGivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -490,7 +490,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void SetValueAsync_WhenGivenNullStream_ThrowsArgNullException()
+        public static void SetValueAsync_WhenGivenNullStream_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -508,7 +508,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void SetValueAsync_WhenGivenUnreadableStream_ThrowsArgException()
+        public static void SetValueAsync_WhenGivenUnreadableStream_ThrowsArgException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -528,7 +528,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TrySetValueAsync_WhenGivenNullKey_ThrowsArgNullException()
+        public static void TrySetValueAsync_WhenGivenNullKey_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -546,7 +546,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TrySetValueAsync_WhenGivenNullStream_ThrowsArgNullException()
+        public static void TrySetValueAsync_WhenGivenNullStream_ThrowsArgNullException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -564,7 +564,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TrySetValueAsync_WhenGivenUnreadableStream_ThrowsArgException()
+        public static void TrySetValueAsync_WhenGivenUnreadableStream_ThrowsArgException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -584,7 +584,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void SetValue_WhenGivenValueTooLarge_ThrowsArgException()
+        public static void SetValue_WhenGivenValueTooLarge_ThrowsArgException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -602,7 +602,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TrySetValue_WhenGivenValueTooLarge_ThrowsArgException()
+        public static void TrySetValue_WhenGivenValueTooLarge_ThrowsArgException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -621,7 +621,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void SetValueAsync_WhenGivenValueTooLarge_ThrowsArgException()
+        public static void SetValueAsync_WhenGivenValueTooLarge_ThrowsArgException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "setvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -639,7 +639,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public async Task TrySetValueAsync_WhenGivenValueTooLarge_ThrowsArgException()
+        public static async Task TrySetValueAsync_WhenGivenValueTooLarge_ThrowsArgException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trysetvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -658,7 +658,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetSetValue_WhenInvokedTogether_HasEqualInputAndOutput()
+        public static void GetSetValue_WhenInvokedTogether_HasEqualInputAndOutput()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "getsetvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -684,7 +684,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TryGetSetValue_WhenInvokedTogether_ReturnsTrueAndHasEqualInputAndOutput()
+        public static void TryGetSetValue_WhenInvokedTogether_ReturnsTrueAndHasEqualInputAndOutput()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetsetvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -711,7 +711,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public async Task GetSetValueAsync_WhenInvokedTogether_HasEqualInputAndOutput()
+        public static async Task GetSetValueAsync_WhenInvokedTogether_HasEqualInputAndOutput()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "getsetvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -737,7 +737,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public async Task TryGetSetValueAsync_WhenInvokedTogether_ReturnsTrueAndHasEqualInputAndOutput()
+        public static async Task TryGetSetValueAsync_WhenInvokedTogether_ReturnsTrueAndHasEqualInputAndOutput()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetsetvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -750,9 +750,9 @@ namespace SJP.DiskCache.Tests
             using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
                 var setSuccess = await cache.TrySetValueAsync("asd", new MemoryStream(input)).ConfigureAwait(false);
-                var getResult = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
+                var (hasValue, stream) = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
 
-                using (var reader = new BinaryReader(getResult.stream))
+                using (var reader = new BinaryReader(stream))
                 {
                     var resultBytes = reader.ReadBytes(4);
                     var seqEqual = input.SequenceEqual(resultBytes);
@@ -764,7 +764,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetSetValue_WhenInvokedTogetherUpdatingValue_HasEqualInputAndOutput()
+        public static void GetSetValue_WhenInvokedTogetherUpdatingValue_HasEqualInputAndOutput()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "getsetvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -793,7 +793,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TryGetSetValue_WhenInvokedTogetherUpdatingValue_ReturnsTrueAndHasEqualInputAndOutput()
+        public static void TryGetSetValue_WhenInvokedTogetherUpdatingValue_ReturnsTrueAndHasEqualInputAndOutput()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetsetvalue_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -822,7 +822,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public async Task GetSetValueAsync_WhenInvokedTogetherUpdatingValue_HasEqualInputAndOutput()
+        public static async Task GetSetValueAsync_WhenInvokedTogetherUpdatingValue_HasEqualInputAndOutput()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "getsetvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -850,7 +850,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public async Task TryGetSetValueAsync_WhenInvokedTogetherUpdatingValue_ReturnsTrueAndHasEqualInputAndOutput()
+        public static async Task TryGetSetValueAsync_WhenInvokedTogetherUpdatingValue_ReturnsTrueAndHasEqualInputAndOutput()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetsetvalueasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -865,9 +865,9 @@ namespace SJP.DiskCache.Tests
             {
                 var setSuccess = await cache.TrySetValueAsync("asd", new MemoryStream(input)).ConfigureAwait(false);
                 setSuccess = await cache.TrySetValueAsync("asd", new MemoryStream(updatedInput)).ConfigureAwait(false);
-                var getResult = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
+                var (hasValue, stream) = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
 
-                using (var reader = new BinaryReader(getResult.stream))
+                using (var reader = new BinaryReader(stream))
                 {
                     var resultBytes = reader.ReadBytes(4);
                     var seqEqual = updatedInput.SequenceEqual(resultBytes);
@@ -879,7 +879,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void ContainsKey_WhenValueExpired_ReturnsFalse()
+        public static void ContainsKey_WhenValueExpired_ReturnsFalse()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "containskey_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -900,7 +900,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetValue_WhenValueExpired_ThrowsKeyNotFoundException()
+        public static void GetValue_WhenValueExpired_ThrowsKeyNotFoundException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalueexpired_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -921,7 +921,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void TryGetValue_WhenValueExpired_ReturnsFalseAndNullStream()
+        public static void TryGetValue_WhenValueExpired_ReturnsFalseAndNullStream()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalueexpired_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -945,7 +945,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetValueAsync_WhenValueExpired_ThrowsKeyNotFoundException()
+        public static void GetValueAsync_WhenValueExpired_ThrowsKeyNotFoundException()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "getvalueexpired_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -966,7 +966,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public async Task TryGetValueAsync_WhenValueExpired_ReturnsFalseAndNullStream()
+        public static async Task TryGetValueAsync_WhenValueExpired_ReturnsFalseAndNullStream()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "trygetvalueexpired_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -978,19 +978,19 @@ namespace SJP.DiskCache.Tests
             const ulong size = 20;
             using (var cache = new DiskCache<string>(testDir, cachePolicy, size, TimeSpan.FromMilliseconds(5)))
             {
-                cache.SetValue("asd", new MemoryStream(input));
+                await cache.SetValueAsync("asd", new MemoryStream(input)).ConfigureAwait(false);
                 await Task.Delay(100).ConfigureAwait(false);
-                var result = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
+                var (hasValue, stream) = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
 
-                Assert.IsFalse(result.hasValue);
-                Assert.IsNull(result.stream);
+                Assert.IsFalse(hasValue);
+                Assert.IsNull(stream);
             }
 
             testDir.Delete(true);
         }
 
         [Test]
-        public void Clear_WhenValuePresent_RemovesAnyPresentValues()
+        public static void Clear_WhenValuePresent_RemovesAnyPresentValues()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "clearasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -1013,7 +1013,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public async Task ClearAsync_WhenValuePresent_RemovesAnyPresentValues()
+        public static async Task ClearAsync_WhenValuePresent_RemovesAnyPresentValues()
         {
             var testDirPath = Path.Combine(Environment.CurrentDirectory, "clearasync_test");
             var testDir = new DirectoryInfo(testDirPath);
@@ -1025,7 +1025,7 @@ namespace SJP.DiskCache.Tests
             const ulong size = 20;
             using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
-                cache.SetValue("asd", new MemoryStream(input));
+                await cache.SetValueAsync("asd", new MemoryStream(input)).ConfigureAwait(false);
                 await cache.ClearAsync().ConfigureAwait(false);
 
                 var result = await cache.ContainsKeyAsync("asd").ConfigureAwait(false);

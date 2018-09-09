@@ -6,36 +6,36 @@ using NUnit.Framework;
 namespace SJP.DiskCache.Tests
 {
     [TestFixture]
-    public class SlidingTimespanCachePolicyTests
+    internal static class SlidingTimespanCachePolicyTests
     {
         [Test]
-        public void Ctor_GivenNegativeTimeSpan_ThrowsArgOutOfRangeException()
+        public static void Ctor_GivenNegativeTimeSpan_ThrowsArgOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new SlidingTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(-1)));
         }
 
         [Test]
-        public void Ctor_GivenZeroTimeSpan_ThrowsArgOutOfRangeException()
+        public static void Ctor_GivenZeroTimeSpan_ThrowsArgOutOfRangeException()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new SlidingTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(0)));
         }
 
         [Test]
-        public void GetExpiredEntries_GivenNullEntries_ThrowsArgNullException()
+        public static void GetExpiredEntries_GivenNullEntries_ThrowsArgNullException()
         {
             var policy = new SlidingTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(1));
             Assert.Throws<ArgumentNullException>(() => policy.GetExpiredEntries(null, 1));
         }
 
         [Test]
-        public void GetExpiredEntries_GivenZeroSize_ThrowsArgOutOfRangeException()
+        public static void GetExpiredEntries_GivenZeroSize_ThrowsArgOutOfRangeException()
         {
             var policy = new SlidingTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(1));
             Assert.Throws<ArgumentOutOfRangeException>(() => policy.GetExpiredEntries(Enumerable.Empty<ICacheEntry<string>>(), 0));
         }
 
         [Test]
-        public void GetExpiredEntries_WhenCacheNotExhausted_ReturnsEmptySet()
+        public static void GetExpiredEntries_WhenCacheNotExhausted_ReturnsEmptySet()
         {
             var policy = new SlidingTimespanCachePolicy<string>(TimeSpan.FromSeconds(100));
 
@@ -51,7 +51,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetExpiredEntries_WhenOnlyValueExceedsTimePeriod_ReturnsValue()
+        public static void GetExpiredEntries_WhenOnlyValueExceedsTimePeriod_ReturnsValue()
         {
             var policy = new SlidingTimespanCachePolicy<string>(TimeSpan.FromMilliseconds(1));
 
@@ -67,7 +67,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetExpiredEntries_WhenCacheTimesExpired_ReturnsNonEmptyCollection()
+        public static void GetExpiredEntries_WhenCacheTimesExpired_ReturnsNonEmptyCollection()
         {
             var policy = new SlidingTimespanCachePolicy<string>(TimeSpan.FromSeconds(30));
 
@@ -95,7 +95,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetExpiredEntries_WhenCacheTimespansExpired_ReturnsLeastRecentlyAccessedValue()
+        public static void GetExpiredEntries_WhenCacheTimespansExpired_ReturnsLeastRecentlyAccessedValue()
         {
             var policy = new SlidingTimespanCachePolicy<string>(TimeSpan.FromSeconds(30));
 

@@ -6,24 +6,24 @@ using NUnit.Framework;
 namespace SJP.DiskCache.Tests
 {
     [TestFixture]
-    public class LifoCachePolicyTests
+    internal static class LifoCachePolicyTests
     {
         [Test]
-        public void GetExpiredEntries_GivenNullEntries_ThrowsArgNullException()
+        public static void GetExpiredEntries_GivenNullEntries_ThrowsArgNullException()
         {
             var policy = new LifoCachePolicy<string>();
             Assert.Throws<ArgumentNullException>(() => policy.GetExpiredEntries(null, 1));
         }
 
         [Test]
-        public void GetExpiredEntries_GivenZeroSize_ThrowsArgOutOfRangeException()
+        public static void GetExpiredEntries_GivenZeroSize_ThrowsArgOutOfRangeException()
         {
             var policy = new LifoCachePolicy<string>();
             Assert.Throws<ArgumentOutOfRangeException>(() => policy.GetExpiredEntries(Enumerable.Empty<ICacheEntry<string>>(), 0));
         }
 
         [Test]
-        public void GetExpiredEntries_WhenCacheNotExhausted_ReturnsEmptySet()
+        public static void GetExpiredEntries_WhenCacheNotExhausted_ReturnsEmptySet()
         {
             var policy = new LifoCachePolicy<string>();
 
@@ -38,7 +38,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetExpiredEntries_WhenOnlyValueExceedsSize_ReturnsValue()
+        public static void GetExpiredEntries_WhenOnlyValueExceedsSize_ReturnsValue()
         {
             var policy = new LifoCachePolicy<string>();
 
@@ -53,7 +53,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetExpiredEntries_WhenCacheExhausted_ReturnsNonEmptyCollection()
+        public static void GetExpiredEntries_WhenCacheExhausted_ReturnsNonEmptyCollection()
         {
             var policy = new LifoCachePolicy<string>();
 
@@ -78,7 +78,7 @@ namespace SJP.DiskCache.Tests
         }
 
         [Test]
-        public void GetExpiredEntries_WhenCacheExhausted_ReturnsMostRecentlyInsertedValue()
+        public static void GetExpiredEntries_WhenCacheExhausted_ReturnsMostRecentlyInsertedValue()
         {
             var policy = new LifoCachePolicy<string>();
 

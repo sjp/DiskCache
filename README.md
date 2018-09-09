@@ -13,7 +13,7 @@ Enables caching of large objects in memory-constrained environments. Data can be
 
 ## Highlights
 
-* Supports .NET Framework 4.5+, and .NET Standard 2.0+.
+* Supports .NET Standard 2.0.
 * Streams input and output to limit memory usage.
 * Generic cache keys supported.
 * Configurable cache policies. Examples include LRU, FIFO, MRU.

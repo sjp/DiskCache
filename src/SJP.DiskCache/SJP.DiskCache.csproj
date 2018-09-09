@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
     <TreatSpecificWarningsAsErrors />
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
@@ -9,23 +9,16 @@
     <Company />
     <Product />
     <Description>Disk-based caching for large objects in .NET</Description>
-    <Copyright>Copyright © Simon Potter 2017</Copyright>
+    <Copyright>Copyright © Simon Potter 2018</Copyright>
     <PackageLicenseUrl>https://raw.github.com/sjp/DiskCache/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/sjp/DiskCache</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sjp/DiskCache</RepositoryUrl>
     <PackageIconUrl>https://raw.github.com/sjp/DiskCache/master/diskcache.svg</PackageIconUrl>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <PackageReference Include="System.ValueTuple" Version="4.4.0" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="SJP.Sherlock" Version="1.0.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.4.0" />
   </ItemGroup>
 
 </Project>

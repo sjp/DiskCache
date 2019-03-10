@@ -18,7 +18,7 @@ namespace SJP.DiskCache
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeSpan"/> is a negative or zero-length timespan.</exception>
         public FixedTimespanCachePolicy(TimeSpan timeSpan, IEqualityComparer<TKey> keyComparer = null)
         {
-            if (timeSpan <= _zero)
+            if (timeSpan <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException("Expiration time spans must be non-negative and non-zero. The given timespan was instead " + timeSpan.ToString(), nameof(timeSpan));
 
             ExpirationTimespan = timeSpan;
@@ -36,7 +36,7 @@ namespace SJP.DiskCache
         protected IEqualityComparer<TKey> KeyComparer { get; }
 
         /// <summary>
-        /// Retrives the set of entries that are now expired in the cache.
+        /// Retrieves the set of entries that are now expired in the cache.
         /// </summary>
         /// <param name="entries">The set of cache entries to evaluate.</param>
         /// <param name="maximumStorageCapacity">The maximum size of the disk cache. Useful for determining ordering of cache entries.</param>
@@ -48,7 +48,7 @@ namespace SJP.DiskCache
             if (entries == null)
                 throw new ArgumentNullException(nameof(entries));
             if (maximumStorageCapacity == 0)
-                throw new ArgumentOutOfRangeException("The maximum storage capacity must be non-zero.", nameof(maximumStorageCapacity));
+                throw new ArgumentOutOfRangeException(nameof(maximumStorageCapacity), "The maximum storage capacity must be non-zero.");
 
             var currentTime = DateTime.Now;
             ulong totalSum = 0;
@@ -68,7 +68,5 @@ namespace SJP.DiskCache
             var validKeySet = new HashSet<TKey>(validKeys, KeyComparer);
             return entries.Where(e => !validKeySet.Contains(e.Key)).ToList();
         }
-
-        private readonly static TimeSpan _zero = new TimeSpan(0);
     }
 }

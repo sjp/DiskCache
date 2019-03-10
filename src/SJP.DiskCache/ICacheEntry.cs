@@ -6,7 +6,7 @@ namespace SJP.DiskCache
     /// Represents a generic cache entry, including information useful for cache policies.
     /// </summary>
     /// <typeparam name="TKey">The type of keys used in the cache.</typeparam>
-    public interface ICacheEntry<TKey>
+    public interface ICacheEntry<out TKey>
     {
         /// <summary>
         /// The key that the entry represents when looking up in the cache.

@@ -696,8 +696,8 @@ namespace SJP.DiskCache.Tests
             const ulong size = 20;
             using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
-                var setSuccess = cache.TrySetValue("asd", new MemoryStream(input));
-                var getSuccess = cache.TryGetValue("asd", out var result);
+                _ = cache.TrySetValue("test", new MemoryStream(input));
+                _ = cache.TryGetValue("test", out var result);
 
                 using (var reader = new BinaryReader(result))
                 {
@@ -749,8 +749,8 @@ namespace SJP.DiskCache.Tests
             const ulong size = 20;
             using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
-                var setSuccess = await cache.TrySetValueAsync("asd", new MemoryStream(input)).ConfigureAwait(false);
-                var (hasValue, stream) = await cache.TryGetValueAsync("asd").ConfigureAwait(false);
+                _ = await cache.TrySetValueAsync("test", new MemoryStream(input)).ConfigureAwait(false);
+                var (hasValue, stream) = await cache.TryGetValueAsync("test").ConfigureAwait(false);
 
                 using (var reader = new BinaryReader(stream))
                 {
@@ -806,9 +806,9 @@ namespace SJP.DiskCache.Tests
             const ulong size = 20;
             using (var cache = new DiskCache<string>(testDir, cachePolicy, size))
             {
-                var setSuccess = cache.TrySetValue("asd", new MemoryStream(input));
-                setSuccess = cache.TrySetValue("asd", new MemoryStream(updatedInput));
-                var getSuccess = cache.TryGetValue("asd", out var result);
+                var setSuccess = cache.TrySetValue("test", new MemoryStream(input));
+                setSuccess = cache.TrySetValue("test", new MemoryStream(updatedInput));
+                _ = cache.TryGetValue("test", out var result);
 
                 using (var reader = new BinaryReader(result))
                 {

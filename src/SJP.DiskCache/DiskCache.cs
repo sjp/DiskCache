@@ -56,7 +56,7 @@ namespace SJP.DiskCache
 
             pollingInterval = pollingInterval ?? TimeSpan.FromMinutes(1);
             var interval = pollingInterval.Value;
-            if (interval <= _zero)
+            if (interval <= TimeSpan.Zero)
                 throw new ArgumentOutOfRangeException("The polling time interval must be a non-negative and non-zero timespan. Given: " + interval.ToString(), nameof(pollingInterval));
 
             CachePath = new DirectoryInfo(directoryPath);
@@ -242,11 +242,16 @@ namespace SJP.DiskCache
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A stream of data from the cache.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
-        public async Task<Stream> GetValueAsync(TKey key)
+        public Task<Stream> GetValueAsync(TKey key)
         {
             if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
 
+            return GetValueAsyncCore(key);
+        }
+
+        private async Task<Stream> GetValueAsyncCore(TKey key)
+        {
             var keyExists = await ContainsKeyAsync(key).ConfigureAwait(false);
             if (!keyExists)
                 throw new KeyNotFoundException($"Could not find a value for the key '{ key }'");
@@ -393,7 +398,7 @@ namespace SJP.DiskCache
         /// <param name="key">The key used to locate the value in the cache.</param>
         /// <param name="value">A stream of data to store in the cache.</param>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c> or <paramref name="value"/> is <c>null</c>.</exception>
-        public async Task SetValueAsync(TKey key, Stream value)
+        public Task SetValueAsync(TKey key, Stream value)
         {
             if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
@@ -402,6 +407,11 @@ namespace SJP.DiskCache
             if (!value.CanRead)
                 throw new ArgumentException("The given stream is not readable.", nameof(value));
 
+            return SetValueAsyncCore(key, value);
+        }
+
+        private async Task SetValueAsyncCore(TKey key, Stream value)
+        {
             var result = await SetValueCoreAsync(key, value).ConfigureAwait(false);
             switch (result)
             {
@@ -417,7 +427,7 @@ namespace SJP.DiskCache
         /// <param name="value">A stream of data to store in the cache.</param>
         /// <returns><c>true</c> if the data was able to be stored without error; otherwise <c>false</c>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c> or <paramref name="value"/> is <c>null</c>.</exception>
-        public async Task<bool> TrySetValueAsync(TKey key, Stream value)
+        public Task<bool> TrySetValueAsync(TKey key, Stream value)
         {
             if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
@@ -426,6 +436,11 @@ namespace SJP.DiskCache
             if (!value.CanRead)
                 throw new ArgumentException("The given stream is not readable.", nameof(value));
 
+            return TrySetValueAsyncCore(key, value);
+        }
+
+        private async Task<bool> TrySetValueAsyncCore(TKey key, Stream value)
+        {
             var result = await SetValueCoreAsync(key, value).ConfigureAwait(false);
             return result == SetStatus.Success;
         }
@@ -438,7 +453,7 @@ namespace SJP.DiskCache
         /// <returns>A <see cref="SetStatus"/> value on whether the operation completed and how it failed if not.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c> or <paramref name="value"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentException"><paramref name="value"/> is not readable.</exception>
-        protected async Task<SetStatus> SetValueCoreAsync(TKey key, Stream value)
+        protected Task<SetStatus> SetValueCoreAsync(TKey key, Stream value)
         {
             if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
@@ -447,6 +462,11 @@ namespace SJP.DiskCache
             if (!value.CanRead)
                 throw new ArgumentException("The given stream is not readable.", nameof(value));
 
+            return SetValueCoreAsyncCore(key, value);
+        }
+
+        private async Task<SetStatus> SetValueCoreAsyncCore(TKey key, Stream value)
+        {
             ulong totalBytesRead = 0;
             const long bufferSize = 4096;
 
@@ -560,11 +580,16 @@ namespace SJP.DiskCache
         /// <param name="key">The key to locate in the cache.</param>
         /// <returns>A tuple of two values. A boolean determines whether <paramref name="key" /> is present in the cache. If <paramref name="key" /> is present, the <see cref="Stream" /> value will be provided, otherwise it will be <c>null</c>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is <c>null</c>.</exception>
-        public async Task<(bool hasValue, Stream stream)> TryGetValueAsync(TKey key)
+        public Task<(bool hasValue, Stream stream)> TryGetValueAsync(TKey key)
         {
             if (IsNull(key))
                 throw new ArgumentNullException(nameof(key));
 
+            return TryGetValueAsyncCore(key);
+        }
+
+        private async Task<(bool hasValue, Stream stream)> TryGetValueAsyncCore(TKey key)
+        {
             var hasValue = await ContainsKeyAsync(key).ConfigureAwait(false);
             Stream stream = null;
             if (hasValue)
@@ -617,7 +642,7 @@ namespace SJP.DiskCache
         }
 
         /// <summary>
-        /// Retrives a fully qualified path used to store the cached value.
+        /// Retrieves a fully qualified path used to store the cached value.
         /// </summary>
         /// <param name="hash">A hash of the contents of the cache.</param>
         /// <returns>A fully qualified path for a cached value.</returns>
@@ -659,7 +684,6 @@ namespace SJP.DiskCache
         private readonly ConcurrentDictionary<TKey, ICacheEntry<TKey>> _entryLookup;
         private readonly ConcurrentDictionary<TKey, string> _fileLookup;
 
-        private readonly static TimeSpan _zero = new TimeSpan(0);
         private readonly static bool _isValueType = typeof(TKey).IsValueType;
 
         /// <summary>

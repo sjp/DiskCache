@@ -25,7 +25,7 @@ namespace SJP.DiskCache
         protected IEqualityComparer<TKey> KeyComparer { get; }
 
         /// <summary>
-        /// Retrives the set of entries that are now expired in the cache.
+        /// Retrieves the set of entries that are now expired in the cache.
         /// </summary>
         /// <param name="entries">The set of cache entries to evaluate.</param>
         /// <param name="maximumStorageCapacity">The maximum size of the disk cache. Useful for determining ordering of cache entries.</param>
@@ -37,7 +37,7 @@ namespace SJP.DiskCache
             if (entries == null)
                 throw new ArgumentNullException(nameof(entries));
             if (maximumStorageCapacity == 0)
-                throw new ArgumentOutOfRangeException("The maximum storage capacity must be non-zero.", nameof(maximumStorageCapacity));
+                throw new ArgumentOutOfRangeException(nameof(maximumStorageCapacity), "The maximum storage capacity must be non-zero.");
 
             ulong totalSum = 0;
             var validKeys = entries

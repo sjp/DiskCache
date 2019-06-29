@@ -15,8 +15,8 @@ build:
   verbosity: minimal
 
 test_script:
-  - dotnet test src/SJP.DiskCache.Tests/SJP.DiskCache.Tests.csproj --configuration Release --logger:trx;LogFileName=SJP.DiskCache.Tests.results.xml
-  - ps: build/uploadtests.ps1 "src/SJP.DiskCache.Tests/TestResults/SJP.DiskCache.Tests.results.xml"
+  - dotnet test src/SJP.DiskCache.Tests/SJP.DiskCache.Tests.csproj --configuration Release --logger "trx;LogFileName=SJP.DiskCache.Tests.results.xml"
+  - ps: build/uploadtests.ps1 src/SJP.DiskCache.Tests/TestResults/SJP.DiskCache.Tests.results*.xml
 
 notifications:
 - provider: Email
